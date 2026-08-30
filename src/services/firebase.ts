@@ -40,7 +40,6 @@ export const db = firebaseConfig.firestoreDatabaseId
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account',
-  login_hint: 'profanibalcastillo@gmail.com',
 });
 
 // Test connection on boot according to skill guidelines
