@@ -263,38 +263,24 @@ export function useFirebaseSync() {
     syncToCloud,
   ]);
 
-  // Auth Handlers
-  const login = async (customUser?: any) => {
+  // Auth Handlers - Enforce Google Authentication
+  const login = async () => {
     setIsLoadingUser(true);
     try {
-      if (customUser) {
-        setUser(customUser);
-        localStorage.setItem('meduca_logged_user_v1', JSON.stringify(customUser));
-        setIsLoadingUser(false);
-        return;
-      }
       const fireUser = await loginWithGoogle();
       if (fireUser) {
         const u = {
           uid: fireUser.uid,
-          email: fireUser.email,
+          email: fireUser.email || 'profanibalcastillo@gmail.com',
           displayName: fireUser.displayName || 'Prof. Aníbal Castillo',
-          photoURL: fireUser.photoURL,
+          photoURL: fireUser.photoURL || INITIAL_TEACHER_PROFILE.avatarUrl,
         };
         setUser(u);
         localStorage.setItem('meduca_logged_user_v1', JSON.stringify(u));
       }
     } catch (err) {
       console.error('Google login error:', err);
-      // Fallback to Prof. Aníbal session if popup blocked in preview iframe
-      const fallbackUser = {
-        uid: 'anibal-castillo-uid',
-        email: 'profanibalcastillo@gmail.com',
-        displayName: 'Prof. Aníbal Castillo',
-        photoURL: INITIAL_TEACHER_PROFILE.avatarUrl,
-      };
-      setUser(fallbackUser);
-      localStorage.setItem('meduca_logged_user_v1', JSON.stringify(fallbackUser));
+      throw err;
     } finally {
       setIsLoadingUser(false);
     }
