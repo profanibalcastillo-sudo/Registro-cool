@@ -210,10 +210,14 @@ export interface Group {
   grade?: string;
   subject?: string;
   educationLevel?: 'Primaria' | 'Premedia' | 'Media';
+  track?: string; // e.g., 'Ciencias', 'Humanidades', 'Comercio', 'General', 'Informática', 'Turismo'
   academicYear?: number;
+  shift?: 'Matutino' | 'Vespertino' | 'Completa';
   roomNumber?: string;
   studentsCount?: number;
   studentCount?: number;
+  colorTag?: string;
+  description?: string;
 }
 
 export interface CategoryWeights {
