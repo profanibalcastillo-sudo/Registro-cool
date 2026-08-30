@@ -20,8 +20,8 @@ import {
 import { Group, CurrentPeriodInfo } from '../types';
 
 interface NavbarProps {
-  activeTab: 'gradebook' | 'attendance' | 'schedule' | 'theme-planner' | 'weekly-planner';
-  onTabChange: (tab: 'gradebook' | 'attendance' | 'schedule' | 'theme-planner' | 'weekly-planner') => void;
+  activeTab: 'gradebook' | 'attendance' | 'schedule' | 'theme-planner' | 'weekly-planner' | 'classroom-tools';
+  onTabChange: (tab: 'gradebook' | 'attendance' | 'schedule' | 'theme-planner' | 'weekly-planner' | 'classroom-tools') => void;
   groups: Group[];
   selectedGroupId: string;
   onGroupChange: (groupId: string) => void;
@@ -332,6 +332,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <FileText className="w-3.5 h-3.5" />
             <span>Plan Semanal</span>
+          </button>
+
+          {/* 6. Classroom Tools */}
+          <button
+            type="button"
+            onClick={() => onTabChange('classroom-tools')}
+            className={`px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'classroom-tools'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm font-black'
+                : 'text-amber-400/90 hover:bg-slate-800 hover:text-amber-300 border border-transparent'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Herramientas de Aula</span>
           </button>
 
           {/* Configuration Tools Menu */}

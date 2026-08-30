@@ -15,8 +15,8 @@ import {
   FileText,
   FolderPlus,
 } from 'lucide-react';
-import { ThemePlanner, Group } from '../types';
-import { exportThemePlannerToHTML } from '../utils/exportUtils';
+import { ThemePlanner, Group, SkillLessonPlan } from '../types';
+import { exportThemePlannerToHTML, exportLessonPlanToHTML } from '../utils/exportUtils';
 import { createNewThemePlanner } from '../utils/plannerUtils';
 
 interface ThemePlannerViewProps {
@@ -66,6 +66,11 @@ export const ThemePlannerView: React.FC<ThemePlannerViewProps> = ({
 
   const handlePrint = () => {
     exportThemePlannerToHTML(teacherInfo as any, group, editablePlanner);
+  };
+
+  const handlePrintLesson = (lesson: SkillLessonPlan, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    exportLessonPlanToHTML(teacherInfo as any, group, editablePlanner, lesson);
   };
 
   const handleSaveAll = () => {
@@ -315,7 +320,16 @@ export const ThemePlannerView: React.FC<ThemePlannerViewProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400 font-mono hidden sm:inline">
+                    <button
+                      type="button"
+                      onClick={(e) => handlePrintLesson(lesson, e)}
+                      title={`Exportar PDF Oficial MEDUCA de la Lección ${lesson.lessonNumber} (${lesson.skillTitle})`}
+                      className="px-2.5 py-1 rounded-lg bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white border border-purple-500/40 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">PDF Lección {lesson.lessonNumber}</span>
+                    </button>
+                    <span className="text-xs text-slate-400 font-mono hidden md:inline">
                       {lesson.totalTimeMinutes} min
                     </span>
                     {isExpanded ? (

@@ -7,6 +7,7 @@ import { AttendanceView } from './components/AttendanceView';
 import { ScheduleView } from './components/ScheduleView';
 import { ThemePlannerView } from './components/ThemePlannerView';
 import { WeeklyPlannerView } from './components/WeeklyPlannerView';
+import { ClassroomToolsView } from './components/ClassroomToolsView';
 import { CalendarSettingsModal } from './components/CalendarSettingsModal';
 import { StudentsModal } from './components/StudentsModal';
 import { GroupsModal } from './components/GroupsModal';
@@ -60,7 +61,7 @@ export function App() {
 
   // Active navigation tab
   const [activeTab, setActiveTab] = useState<
-    'gradebook' | 'attendance' | 'schedule' | 'theme-planner' | 'weekly-planner'
+    'gradebook' | 'attendance' | 'schedule' | 'theme-planner' | 'weekly-planner' | 'classroom-tools'
   >('gradebook');
 
   // Modals state
@@ -211,6 +212,14 @@ export function App() {
             weeklyPlanners={weeklyPlanners}
             onSaveWeeklyPlanner={saveWeeklyPlanner}
             onOpenAiPlanner={() => setIsAiModalOpen(true)}
+            teacherInfo={teacherInfo}
+          />
+        )}
+
+        {activeTab === 'classroom-tools' && (
+          <ClassroomToolsView
+            group={selectedGroup}
+            students={students}
             teacherInfo={teacherInfo}
           />
         )}
