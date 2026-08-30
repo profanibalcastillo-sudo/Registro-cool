@@ -9,6 +9,7 @@ import { ThemePlannerView } from './components/ThemePlannerView';
 import { WeeklyPlannerView } from './components/WeeklyPlannerView';
 import { CalendarSettingsModal } from './components/CalendarSettingsModal';
 import { StudentsModal } from './components/StudentsModal';
+import { GroupsModal } from './components/GroupsModal';
 import { TeacherSignatureModal } from './components/TeacherSignatureModal';
 import { getCurrentPeriodInfo } from './data/initialData';
 import { playSchoolBell, playWarningBell } from './services/soundEffects';
@@ -36,6 +37,9 @@ export function App() {
     teacherInfo,
     login,
     logout,
+    addGroup,
+    updateGroup,
+    deleteGroup,
     updateGrade,
     addEvaluationColumn,
     deleteEvaluationColumn,
@@ -48,6 +52,7 @@ export function App() {
     saveCalendarConfig,
     saveTeacherInfo,
     addStudent,
+    updateStudent,
     deleteStudent,
   } = useFirebaseSync();
 
@@ -59,6 +64,7 @@ export function App() {
   // Modals state
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
+  const [isGroupsModalOpen, setIsGroupsModalOpen] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
 
   // Audio Bell State & Countdown
@@ -133,6 +139,7 @@ export function App() {
         syncStatus={syncStatus}
         onOpenCalendarModal={() => setIsCalendarModalOpen(true)}
         onOpenStudentsModal={() => setIsStudentsModalOpen(true)}
+        onOpenGroupsModal={() => setIsGroupsModalOpen(true)}
         onOpenSignatureModal={() => setIsSignatureModalOpen(true)}
         currentPeriodInfo={currentPeriodInfo}
         onTriggerBellSound={handleTriggerBellSound}
@@ -200,6 +207,20 @@ export function App() {
       </main>
 
       {/* Auxiliary Modals */}
+      <GroupsModal
+        isOpen={isGroupsModalOpen}
+        onClose={() => setIsGroupsModalOpen(false)}
+        groups={groups}
+        selectedGroupId={selectedGroupId}
+        onSelectGroup={(id) => {
+          setSelectedGroupId(id);
+          setIsGroupsModalOpen(false);
+        }}
+        onAddGroup={addGroup}
+        onUpdateGroup={updateGroup}
+        onDeleteGroup={deleteGroup}
+      />
+
       <CalendarSettingsModal
         isOpen={isCalendarModalOpen}
         onClose={() => setIsCalendarModalOpen(false)}
@@ -211,8 +232,11 @@ export function App() {
         isOpen={isStudentsModalOpen}
         onClose={() => setIsStudentsModalOpen(false)}
         group={selectedGroup}
+        groups={groups}
+        onSelectGroup={setSelectedGroupId}
         students={students}
         onAddStudent={addStudent}
+        onUpdateStudent={updateStudent}
         onDeleteStudent={deleteStudent}
       />
 

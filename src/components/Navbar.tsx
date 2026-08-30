@@ -31,6 +31,7 @@ interface NavbarProps {
   syncStatus: 'synced' | 'syncing' | 'error' | 'offline';
   onOpenCalendarModal: () => void;
   onOpenStudentsModal: () => void;
+  onOpenGroupsModal: () => void;
   onOpenSignatureModal: () => void;
   currentPeriodInfo: CurrentPeriodInfo;
   onTriggerBellSound?: () => void;
@@ -49,6 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   syncStatus,
   onOpenCalendarModal,
   onOpenStudentsModal,
+  onOpenGroupsModal,
   onOpenSignatureModal,
   currentPeriodInfo,
   onTriggerBellSound,
@@ -176,7 +178,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Group / Class Selection Dropdown */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <label htmlFor="group-selector" className="text-xs text-slate-400 font-medium hidden sm:inline">
               Grupo:
             </label>
@@ -184,14 +186,25 @@ export const Navbar: React.FC<NavbarProps> = ({
               id="group-selector"
               value={selectedGroupId}
               onChange={(e) => onGroupChange(e.target.value)}
-              className="bg-slate-800 border border-slate-700 text-white rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
+              className="bg-slate-800 border border-slate-700 text-white rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer max-w-[210px] truncate"
             >
               {groups.map((group) => (
                 <option key={group.id} value={group.id}>
-                  {group.name} - {group.subject} ({group.studentsCount} est.)
+                  {group.name} - {group.subject} ({group.studentsCount || 0} est.)
                 </option>
               ))}
             </select>
+
+            {/* Quick Button to open Groups Manager (Create / Delete Groups) */}
+            <button
+              type="button"
+              onClick={onOpenGroupsModal}
+              title="Administrar, Crear y Eliminar Grupos (Primaria, Premedia, Media)"
+              className="px-2 py-1.5 rounded-lg bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Grupos ({groups.length})</span>
+            </button>
           </div>
 
           {/* Trimester Tabs */}
@@ -287,6 +300,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Configuration Tools Menu */}
           <div className="flex items-center gap-1 pl-2 border-l border-slate-700">
+            <button
+              type="button"
+              onClick={onOpenGroupsModal}
+              title="Administrar, Crear y Eliminar Grupos (Primaria, Premedia, Media)"
+              className="p-1.5 rounded-lg text-blue-400 hover:text-white hover:bg-slate-800 border border-slate-700/60 cursor-pointer"
+            >
+              <Layers className="w-3.5 h-3.5" />
+            </button>
+
             <button
               type="button"
               onClick={onOpenStudentsModal}

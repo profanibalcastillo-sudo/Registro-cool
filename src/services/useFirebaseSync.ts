@@ -167,6 +167,7 @@ export function useFirebaseSync() {
           const snap = await getDoc(docRef);
           if (snap.exists()) {
             const data = snap.data();
+            if (data.groups && Array.isArray(data.groups)) setGroups(data.groups);
             if (data.students && Array.isArray(data.students)) setStudents(data.students);
             if (data.evaluationColumns && Array.isArray(data.evaluationColumns)) setEvaluationColumns(data.evaluationColumns);
             if (data.grades && typeof data.grades === 'object') setGrades(data.grades);
@@ -398,8 +399,75 @@ export function useFirebaseSync() {
     setTeacherInfo(info);
   }, []);
 
+  const addGroup = useCallback((newGroup: Group, sampleStudents?: Student[]) => {
+    setGroups((prev) => [...prev, newGroup]);
+    if (sampleStudents && sampleStudents.length > 0) {
+      setStudents((prev) => [...prev, ...sampleStudents]);
+    }
+    // Automatically create initial evaluation columns for the group in Trim 1, 2, 3
+    const defaultCols: EvaluationColumn[] = [
+      {
+        id: `col-${newGroup.id}-t1-f1`,
+        groupId: newGroup.id,
+        trimester: 1,
+        category: 'formative',
+        title: 'Taller Diagnóstico / Vocabulario',
+        description: 'Actividad formativa inicial.',
+        date: '2026-03-10',
+        maxScore: 5.0,
+        weight: 33,
+      },
+      {
+        id: `col-${newGroup.id}-t1-s1`,
+        groupId: newGroup.id,
+        trimester: 1,
+        category: 'summative',
+        title: 'Prueba Sumativa I',
+        description: 'Evaluación sumativa de contenidos.',
+        date: '2026-04-15',
+        maxScore: 5.0,
+        weight: 33,
+      },
+      {
+        id: `col-${newGroup.id}-t1-e1`,
+        groupId: newGroup.id,
+        trimester: 1,
+        category: 'exam',
+        title: 'Examen Trimestral I',
+        description: 'Examen trimestral acumulativo.',
+        date: '2026-05-28',
+        maxScore: 5.0,
+        weight: 34,
+      },
+    ];
+    setEvaluationColumns((prev) => [...prev, ...defaultCols]);
+    setSelectedGroupId(newGroup.id);
+  }, []);
+
+  const updateGroup = useCallback((updatedGroup: Group) => {
+    setGroups((prev) => prev.map((g) => (g.id === updatedGroup.id ? updatedGroup : g)));
+  }, []);
+
+  const deleteGroup = useCallback((groupId: string) => {
+    setGroups((prev) => {
+      const remaining = prev.filter((g) => g.id !== groupId);
+      if (remaining.length > 0) {
+        setSelectedGroupId((current) => (current === groupId ? remaining[0].id : current));
+      }
+      return remaining;
+    });
+    // Clean up students for deleted group
+    setStudents((prev) => prev.filter((s) => s.groupId !== groupId));
+    // Clean up columns for deleted group
+    setEvaluationColumns((prev) => prev.filter((c) => c.groupId !== groupId));
+  }, []);
+
   const addStudent = useCallback((student: Student) => {
     setStudents((prev) => [...prev, student]);
+  }, []);
+
+  const updateStudent = useCallback((student: Student) => {
+    setStudents((prev) => prev.map((s) => (s.id === student.id ? student : s)));
   }, []);
 
   const deleteStudent = useCallback((studentId: string) => {
@@ -434,6 +502,9 @@ export function useFirebaseSync() {
     handleLogin: login,
     logout,
     handleLogout: logout,
+    addGroup,
+    updateGroup,
+    deleteGroup,
     updateGrade,
     addEvaluationColumn,
     deleteEvaluationColumn,
@@ -446,6 +517,7 @@ export function useFirebaseSync() {
     saveCalendarConfig,
     saveTeacherInfo,
     addStudent,
+    updateStudent,
     deleteStudent,
     manualSync: syncToCloud,
   };
