@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Information about the authenticated teacher",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "TeacherData": {
+      "title": "TeacherData",
+      "description": "User cloud stored registry data (groups, students, evaluations, attendance, incidents, planners, settings)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "teacher": { "type": "object" },
+        "groups": { "type": "array" },
+        "students": { "type": "array" },
+        "evaluations": { "type": "array" },
+        "attendance": { "type": "array" },
+        "behaviorIncidents": { "type": "array" },
+        "themePlanners": { "type": "array" },
+        "weights": { "type": "object" },
+        "lastSyncedAt": { "type": "string" }
+      },
+      "required": ["userId"]
+    }
+  },
+  "rules": {
+    "users": {
+      "$userId": {
+        "read": "auth != null && auth.uid == $userId",
+        "write": "auth != null && auth.uid == $userId"
+      }
+    },
+    "teacher_data": {
+      "$docId": {
+        "read": "auth != null && resource.data.userId == auth.uid",
+        "write": "auth != null && request.resource.data.userId == auth.uid"
+      }
+    },
+    "teacher_records": {
+      "$userId": {
+        "read": "auth != null && auth.uid == $userId",
+        "write": "auth != null && auth.uid == $userId"
+      }
+    }
+  }
+}

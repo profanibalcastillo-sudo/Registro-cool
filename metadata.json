@@ -1,0 +1,8 @@
+{
+  "name": "Remix Registro Digital Docente - Teacher Aníbal",
+  "description": "Sistema digital docente oficial con libreta de calificaciones, 9 períodos de clase con timbre y alarma en tiempo real, calendario de 3 trimestres, planificador didáctico por 5 competencias MEDUCA y sincronización Firebase.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
