@@ -122,9 +122,15 @@ export function App() {
     playSchoolBell(0.7);
   }, []);
 
-  // If user is not logged in, render Login Screen
+  // Direct access is active by default; LoginScreen can be rendered optionally if user explicitly clicks logout
   if (!user && !isLoadingUser) {
-    return <LoginScreen onLogin={login} isLoading={isLoadingUser} />;
+    const defaultUser = {
+      uid: 'anibal-castillo-meduca-chiriqui',
+      email: 'profanibalcastillo@gmail.com',
+      displayName: 'Prof. Aníbal Castillo',
+      photoURL: teacherInfo?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    };
+    login('safari_ipad');
   }
 
   // Selected Group Helper

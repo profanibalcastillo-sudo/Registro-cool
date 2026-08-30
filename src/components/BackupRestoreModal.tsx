@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
   Download,
@@ -22,7 +22,18 @@ import {
   Award,
   BookOpen,
   Calendar,
+  Cloud,
+  FolderSync,
+  ExternalLink,
 } from 'lucide-react';
+import {
+  getGoogleDriveToken,
+  uploadBackupToDrive,
+  listDriveBackups,
+  readBackupFromDrive,
+  deleteDriveFile,
+  GoogleDriveFile,
+} from '../services/googleDrive';
 import {
   Group,
   Student,
@@ -105,10 +116,18 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
   syncStatus,
   onManualCloudSync,
 }) => {
-  const [activeTab, setActiveTab] = useState<'export' | 'import' | 'snapshots' | 'diagnostics'>('export');
+  const [activeTab, setActiveTab] = useState<'export' | 'import' | 'drive' | 'snapshots' | 'diagnostics'>('export');
   const [copied, setCopied] = useState(false);
   const [snapshotLabel, setSnapshotLabel] = useState('');
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+
+  // Google Drive Integration State
+  const [isDriveConnecting, setIsDriveConnecting] = useState(false);
+  const [isDriveUploading, setIsDriveUploading] = useState(false);
+  const [isDriveLoadingFiles, setIsDriveLoadingFiles] = useState(false);
+  const [driveFiles, setDriveFiles] = useState<GoogleDriveFile[]>([]);
+  const [driveConnected, setDriveConnected] = useState(false);
+  const [driveToken, setDriveToken] = useState<string | null>(null);
 
   // Import State
   const [fileToImport, setFileToImport] = useState<File | null>(null);
@@ -117,6 +136,112 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
   const [importMode, setImportMode] = useState<'replace' | 'merge'>('replace');
   const [isProcessingImport, setIsProcessingImport] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Google Drive Helpers
+  const handleConnectDrive = async () => {
+    setIsDriveConnecting(true);
+    setStatusMessage(null);
+    try {
+      const token = await getGoogleDriveToken();
+      setDriveToken(token);
+      setDriveConnected(true);
+      setStatusMessage({ type: 'success', text: '¡Conectado exitosamente a tu cuenta de Google Drive!' });
+      // Fetch files
+      await loadDriveFiles(token);
+    } catch (err: any) {
+      console.error('Drive connection error:', err);
+      setStatusMessage({
+        type: 'error',
+        text: err.message || 'No se pudo conectar a Google Drive. Verifique permisos y ventanas emergentes.',
+      });
+    } finally {
+      setIsDriveConnecting(false);
+    }
+  };
+
+  const loadDriveFiles = async (token?: string) => {
+    const activeToken = token || driveToken;
+    if (!activeToken) return;
+    setIsDriveLoadingFiles(true);
+    try {
+      const files = await listDriveBackups(activeToken);
+      setDriveFiles(files);
+    } catch (err: any) {
+      console.error('Error listing drive files:', err);
+      setStatusMessage({ type: 'error', text: 'Error al listar los respaldos de Google Drive.' });
+    } finally {
+      setIsDriveLoadingFiles(false);
+    }
+  };
+
+  const handleUploadToDrive = async () => {
+    try {
+      let token = driveToken;
+      if (!token) {
+        token = await getGoogleDriveToken();
+        setDriveToken(token);
+        setDriveConnected(true);
+      }
+      setIsDriveUploading(true);
+      const data = exportBackupData();
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const customName = `MEDUCA_Respaldo_${dateStr}_${groups.length}grupos.json`;
+      
+      const file = await uploadBackupToDrive(token, data, customName);
+      setStatusMessage({
+        type: 'success',
+        text: `¡Respaldo guardado exitosamente en Google Drive! Archivo: ${file.name}`,
+      });
+      await loadDriveFiles(token);
+    } catch (err: any) {
+      console.error('Drive upload failed:', err);
+      setStatusMessage({
+        type: 'error',
+        text: err.message || 'Error al guardar el respaldo en Google Drive.',
+      });
+    } finally {
+      setIsDriveUploading(false);
+    }
+  };
+
+  const handleRestoreFromDrive = async (file: GoogleDriveFile) => {
+    if (!window.confirm(`¿Desea restaurar el archivo "${file.name}" desde Google Drive?\n\nSe creará un punto de seguridad local antes de aplicar.`)) {
+      return;
+    }
+    try {
+      let token = driveToken;
+      if (!token) {
+        token = await getGoogleDriveToken();
+        setDriveToken(token);
+      }
+      setStatusMessage({ type: 'info', text: `Descargando "${file.name}" desde Google Drive...` });
+      const data = await readBackupFromDrive(token, file.id);
+      setParsedBackup(data);
+      setActiveTab('import');
+      setStatusMessage({
+        type: 'info',
+        text: `Archivo "${file.name}" descargado de Drive. Revisa los datos y pulsa "Confirmar y Restaurar Datos".`,
+      });
+    } catch (err: any) {
+      console.error('Failed to restore from Drive:', err);
+      setStatusMessage({ type: 'error', text: 'No se pudo leer el archivo seleccionado de Google Drive.' });
+    }
+  };
+
+  const handleDeleteFromDrive = async (file: GoogleDriveFile) => {
+    if (!window.confirm(`¿Desea eliminar permanentemente el respaldo "${file.name}" de su Google Drive?`)) {
+      return;
+    }
+    try {
+      if (!driveToken) return;
+      await deleteDriveFile(driveToken, file.id);
+      setStatusMessage({ type: 'success', text: `Archivo "${file.name}" eliminado de Google Drive.` });
+      await loadDriveFiles(driveToken);
+    } catch (err: any) {
+      setStatusMessage({ type: 'error', text: 'No se pudo eliminar el archivo de Google Drive.' });
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -284,6 +409,23 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
           <button
             type="button"
             onClick={() => {
+              setActiveTab('drive');
+              setStatusMessage(null);
+              if (driveToken) loadDriveFiles(driveToken);
+            }}
+            className={`px-3.5 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'drive'
+                ? 'bg-emerald-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            <Cloud className="w-4 h-4 text-emerald-400" />
+            <span>3. Google Drive (Nube)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
               setActiveTab('snapshots');
               setStatusMessage(null);
             }}
@@ -294,7 +436,7 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
             }`}
           >
             <Clock className="w-4 h-4" />
-            <span>3. Historial de Puntos Locales ({localSnapshots.length})</span>
+            <span>4. Historial de Puntos Locales ({localSnapshots.length})</span>
           </button>
 
           <button
@@ -310,7 +452,7 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
             }`}
           >
             <Database className="w-4 h-4" />
-            <span>4. Diagnóstico de Memoria Local</span>
+            <span>5. Diagnóstico de Memoria Local</span>
           </button>
         </div>
 
@@ -633,7 +775,153 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
             </div>
           )}
 
-          {/* TAB 3: SNAPSHOTS & HISTORY */}
+          {/* TAB 3: GOOGLE DRIVE BACKUPS */}
+          {activeTab === 'drive' && (
+            <div className="space-y-6">
+              {/* Drive Connection Banner */}
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-950/50 via-slate-900 to-slate-950 border border-emerald-500/40 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+                <div className="space-y-1 text-center sm:text-left">
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <Cloud className="w-5 h-5 text-emerald-400" />
+                    <h3 className="text-base font-bold text-white">Google Drive Cloud Storage</h3>
+                    {driveConnected && (
+                      <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Conectado
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300 max-w-xl">
+                    Guarda tus copias de seguridad de forma segura en una carpeta dedicada de tu unidad de Google Drive ({teacherInfo.email || 'profanibalcastillo@gmail.com'}) y descárgalas en cualquier dispositivo.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                  {!driveConnected ? (
+                    <button
+                      type="button"
+                      disabled={isDriveConnecting}
+                      onClick={handleConnectDrive}
+                      className="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/30 cursor-pointer disabled:opacity-50"
+                    >
+                      {isDriveConnecting ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Cloud className="w-4 h-4" />
+                      )}
+                      <span>Conectar con Google Drive</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={isDriveUploading}
+                      onClick={handleUploadToDrive}
+                      className="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/30 cursor-pointer disabled:opacity-50"
+                    >
+                      {isDriveUploading ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                      <span>Subir Respaldo Ahora a Drive</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Drive Files List */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                    <span>Archivos de Respaldo en Google Drive</span>
+                    {driveFiles.length > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-slate-800 text-emerald-400 text-[10px] font-mono">
+                        {driveFiles.length}
+                      </span>
+                    )}
+                  </h4>
+                  {driveConnected && (
+                    <button
+                      type="button"
+                      disabled={isDriveLoadingFiles}
+                      onClick={() => loadDriveFiles()}
+                      className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isDriveLoadingFiles ? 'animate-spin' : ''}`} />
+                      <span>Actualizar Lista</span>
+                    </button>
+                  )}
+                </div>
+
+                {!driveConnected ? (
+                  <div className="p-8 text-center rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs space-y-3">
+                    <Cloud className="w-8 h-8 text-slate-600 mx-auto" />
+                    <p>
+                      Haz clic en el botón <strong className="text-emerald-400">"Conectar con Google Drive"</strong> para autorizar el acceso y ver o crear tus respaldos en la nube.
+                    </p>
+                  </div>
+                ) : isDriveLoadingFiles ? (
+                  <div className="p-8 text-center rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs flex items-center justify-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
+                    <span>Cargando archivos desde Google Drive...</span>
+                  </div>
+                ) : driveFiles.length === 0 ? (
+                  <div className="p-8 text-center rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs space-y-2">
+                    <p>No se encontraron respaldos previos en tu carpeta de Google Drive.</p>
+                    <p className="text-[11px] text-slate-500">
+                      Usa el botón superior "Subir Respaldo Ahora a Drive" para crear tu primera copia de seguridad.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                    {driveFiles.map((file) => (
+                      <div
+                        key={file.id}
+                        className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-colors"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <FileJson className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <span className="font-bold text-xs text-white truncate max-w-sm">{file.name}</span>
+                          </div>
+                          <div className="text-[11px] text-slate-400 flex items-center gap-3">
+                            <span>Modificado: {new Date(file.modifiedTime).toLocaleString()}</span>
+                            {file.size && (
+                              <>
+                                <span>•</span>
+                                <span>{Math.round(parseInt(file.size, 10) / 1024)} KB</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                          <button
+                            type="button"
+                            onClick={() => handleRestoreFromDrive(file)}
+                            className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Cargar y Restaurar</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteFromDrive(file)}
+                            title="Eliminar de Google Drive"
+                            className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 hover:text-rose-300 text-slate-500 border border-slate-800 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: SNAPSHOTS & HISTORY */}
           {activeTab === 'snapshots' && (
             <div className="space-y-6">
               {/* Create Snapshot Form */}

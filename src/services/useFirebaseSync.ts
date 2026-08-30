@@ -48,10 +48,20 @@ export function useFirebaseSync() {
       try {
         return JSON.parse(saved);
       } catch {
-        return null;
+        // default fallback
       }
     }
-    return null;
+    // Default active teacher profile (direct access, no login barrier)
+    const defaultUser = {
+      uid: 'anibal-castillo-meduca-chiriqui',
+      email: 'profanibalcastillo@gmail.com',
+      displayName: 'Prof. Aníbal Castillo',
+      photoURL: INITIAL_TEACHER_PROFILE.avatarUrl,
+    };
+    try {
+      localStorage.setItem('meduca_logged_user_v1', JSON.stringify(defaultUser));
+    } catch {}
+    return defaultUser;
   });
 
   const [isLoadingUser, setIsLoadingUser] = useState(false);

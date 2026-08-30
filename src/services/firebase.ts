@@ -13,19 +13,20 @@ import { getFirestore, doc, getDoc, setDoc, onSnapshot, getDocFromServer } from 
 import bundledConfig from '../../firebase-applet-config.json';
 
 // Support both bundled config and environment variables for Vercel/GitHub deployments
+const safeBundledConfig: any = bundledConfig;
 const firebaseConfig = {
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || bundledConfig.projectId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || bundledConfig.appId,
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || bundledConfig.apiKey,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || bundledConfig.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || safeBundledConfig.projectId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || safeBundledConfig.appId,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || safeBundledConfig.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || safeBundledConfig.authDomain,
   firestoreDatabaseId:
     import.meta.env.VITE_FIREBASE_DATABASE_ID ||
     import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID ||
-    bundledConfig.firestoreDatabaseId,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || bundledConfig.storageBucket,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || bundledConfig.messagingSenderId,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || bundledConfig.measurementId,
-  oAuthClientId: import.meta.env.VITE_FIREBASE_OAUTH_CLIENT_ID || bundledConfig.oAuthClientId,
+    safeBundledConfig.firestoreDatabaseId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || safeBundledConfig.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || safeBundledConfig.messagingSenderId,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || safeBundledConfig.measurementId,
+  oAuthClientId: import.meta.env.VITE_FIREBASE_OAUTH_CLIENT_ID || safeBundledConfig.oAuthClientId,
 };
 
 // Initialize Firebase App instance safely

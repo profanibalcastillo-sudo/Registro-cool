@@ -25,17 +25,18 @@ export const DeployGuideModal: React.FC<DeployGuideModalProps> = ({ isOpen, onCl
 
   if (!isOpen) return null;
 
+  const safeConfig: any = bundledConfig;
   const envSample = `# --- CONFIGURACIÓN DE GEMINI AI ---
 GEMINI_API_KEY="Tu_Clave_de_Google_Gemini_API"
 
 # --- CONFIGURACIÓN DE FIREBASE (MEDUCA) ---
-VITE_FIREBASE_PROJECT_ID="${bundledConfig.projectId || 'gen-lang-client-0119326918'}"
-VITE_FIREBASE_APP_ID="${bundledConfig.appId || '1:613208611402:web:4563ba3698c31861d4a4b3'}"
-VITE_FIREBASE_API_KEY="${bundledConfig.apiKey || 'AIzaSyBVGtx5dV7guOrnHifCdi2A7J2N4MGFRwI'}"
-VITE_FIREBASE_AUTH_DOMAIN="${bundledConfig.authDomain || 'gen-lang-client-0119326918.firebaseapp.com'}"
-VITE_FIREBASE_DATABASE_ID="${bundledConfig.firestoreDatabaseId || 'ai-studio-remixregistrodig-2eff8f72-b3ec-4c56-a668-a091c72b7c1d'}"
-VITE_FIREBASE_STORAGE_BUCKET="${bundledConfig.storageBucket || 'gen-lang-client-0119326918.firebasestorage.app'}"
-VITE_FIREBASE_MESSAGING_SENDER_ID="${bundledConfig.messagingSenderId || '613208611402'}"
+VITE_FIREBASE_PROJECT_ID="${safeConfig.projectId || 'gen-lang-client-0119326918'}"
+VITE_FIREBASE_APP_ID="${safeConfig.appId || '1:613208611402:web:4563ba3698c31861d4a4b3'}"
+VITE_FIREBASE_API_KEY="${safeConfig.apiKey || 'AIzaSyBVGtx5dV7guOrnHifCdi2A7J2N4MGFRwI'}"
+VITE_FIREBASE_AUTH_DOMAIN="${safeConfig.authDomain || 'gen-lang-client-0119326918.firebaseapp.com'}"
+VITE_FIREBASE_DATABASE_ID="${safeConfig.firestoreDatabaseId || 'ai-studio-remixregistrodig-2eff8f72-b3ec-4c56-a668-a091c72b7c1d'}"
+VITE_FIREBASE_STORAGE_BUCKET="${safeConfig.storageBucket || 'gen-lang-client-0119326918.firebasestorage.app'}"
+VITE_FIREBASE_MESSAGING_SENDER_ID="${safeConfig.messagingSenderId || '613208611402'}"
 `;
 
   const handleCopy = (text: string, key: string) => {
