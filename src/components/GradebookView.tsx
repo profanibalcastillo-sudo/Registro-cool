@@ -15,8 +15,10 @@ import {
   ArrowUpDown,
   Filter,
   Info,
+  MessageSquare,
+  Phone,
 } from 'lucide-react';
-import { Student, EvaluationColumn, Grade, Group, AcademicCalendarConfig } from '../types';
+import { Student, EvaluationColumn, Grade, Group, AcademicCalendarConfig, AttendanceRecord } from '../types';
 import {
   calculateStudentTrimesterGrade,
   calculateStudentAnnualSummary,
@@ -26,6 +28,7 @@ import {
   isPrimaryEducation,
 } from '../utils/gradeCalculations';
 import { exportGradesToCSV, exportToPrintableHTML } from '../utils/exportUtils';
+import { ParentReportsModal } from './ParentReportsModal';
 
 interface GradebookViewProps {
   group: Group;
@@ -47,6 +50,7 @@ interface GradebookViewProps {
     region: string;
     signatureDataUrl?: string;
   };
+  attendanceRecords?: Record<string, AttendanceRecord>;
 }
 
 export const GradebookView: React.FC<GradebookViewProps> = ({
@@ -63,11 +67,13 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
   onOpenAiRubric,
   onOpenAiObservations,
   teacherInfo,
+  attendanceRecords = {},
 }) => {
   const isPrimary = useMemo(() => isPrimaryEducation(group), [group]);
   const [viewMode, setViewMode] = useState<'trimester' | 'annual'>('trimester');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<'all' | 'formative' | 'summative' | 'exam'>('all');
   const [isAddingColModalOpen, setIsAddingColModalOpen] = useState(false);
+  const [isParentReportsModalOpen, setIsParentReportsModalOpen] = useState(false);
   const [newColTitle, setNewColTitle] = useState('');
   const [newColCategory, setNewColCategory] = useState<'formative' | 'summative' | 'exam'>('summative');
   const [newColMaxScore, setNewColMaxScore] = useState<number>(5.0);
@@ -307,6 +313,23 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
             </button>
           )}
 
+          {/* Parent Reports & WhatsApp Button */}
+          <button
+            type="button"
+            onClick={() => setIsParentReportsModalOpen(true)}
+            title="Abrir módulo de seguimiento individual a padres, alertas < 3.0 y WhatsApp"
+            className="px-3 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 active:scale-95 text-white border border-emerald-400/40 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-600/20 transition-all"
+          >
+            <MessageSquare className="w-4 h-4 text-emerald-100" />
+            <span className="hidden sm:inline">Reportes Padres & WhatsApp</span>
+            <span className="sm:hidden">WhatsApp</span>
+            {groupStats.failedStudents > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-black text-[10px] animate-pulse">
+                {groupStats.failedStudents}
+              </span>
+            )}
+          </button>
+
           {/* Export CSV */}
           <button
             type="button"
@@ -351,14 +374,30 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
           <CheckCircle2 className="w-6 h-6 text-emerald-500/40" />
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between">
+        <div
+          onClick={() => setIsParentReportsModalOpen(true)}
+          title="Ver reporte y seguimiento de estudiantes reprobados (< 3.0)"
+          className={`border rounded-xl p-3.5 flex items-center justify-between transition-all cursor-pointer ${
+            groupStats.failedStudents > 0
+              ? 'bg-rose-950/40 hover:bg-rose-950/70 border-rose-600/50 shadow-md shadow-rose-950/30'
+              : 'bg-slate-900/80 hover:bg-slate-800/80 border-slate-800'
+          }`}
+        >
           <div>
-            <div className="text-[11px] font-semibold text-rose-400 uppercase tracking-wider">Reprobados (&lt; 3.0)</div>
-            <div className="text-xl font-black text-rose-400 mt-0.5">
-              {groupStats.failedStudents}
+            <div className="text-[11px] font-semibold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+              <span>Reprobados (&lt; 3.0)</span>
+              {groupStats.failedStudents > 0 && (
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+              )}
+            </div>
+            <div className="text-xl font-black text-rose-400 mt-0.5 flex items-center gap-2">
+              <span>{groupStats.failedStudents}</span>
+              <span className="text-[10px] font-bold text-rose-300 bg-rose-900/60 border border-rose-700/60 px-1.5 py-0.2 rounded">
+                Ver Reportes 📱
+              </span>
             </div>
           </div>
-          <AlertTriangle className="w-6 h-6 text-rose-500/40" />
+          <AlertTriangle className="w-6 h-6 text-rose-500/60" />
         </div>
 
         <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between">
@@ -531,6 +570,9 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
                   <th className="p-3 text-center min-w-[90px] bg-slate-950 text-slate-400 border-l border-slate-800">
                     Estado
                   </th>
+                  <th className="p-3 text-center min-w-[110px] bg-slate-950 text-emerald-400 border-l border-slate-800">
+                    WhatsApp / Padres
+                  </th>
                 </tr>
               </thead>
 
@@ -538,7 +580,7 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
               <tbody className="divide-y divide-slate-800">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan={displayedColumns.length + (isPrimary ? 4 : 7)} className="p-8 text-center text-slate-400">
+                    <td colSpan={displayedColumns.length + (isPrimary ? 5 : 8)} className="p-8 text-center text-slate-400">
                       No se encontraron estudiantes para este grupo.
                     </td>
                   </tr>
@@ -649,6 +691,23 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
                           >
                             {isFailing ? 'Reprobado' : 'Aprobado'}
                           </span>
+                        </td>
+
+                        {/* WhatsApp / Parent Report Action */}
+                        <td className="p-2 text-center border-l border-slate-800">
+                          <button
+                            type="button"
+                            onClick={() => setIsParentReportsModalOpen(true)}
+                            title={`Abrir reporte WhatsApp y boleta individual para ${student.lastName}, ${student.firstName}`}
+                            className={`px-2 py-1 rounded-lg text-xs font-bold flex items-center justify-center gap-1 mx-auto transition-all cursor-pointer ${
+                              isFailing
+                                ? 'bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700/60 shadow-sm'
+                                : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-emerald-300 border border-slate-700'
+                            }`}
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span className="text-[11px] font-semibold">{isFailing ? '🚨 Alerta' : 'Reporte'}</span>
+                          </button>
                         </td>
                       </tr>
                     );
@@ -866,6 +925,21 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Parent Reports & WhatsApp Follow-up Modal */}
+      {isParentReportsModalOpen && (
+        <ParentReportsModal
+          isOpen={isParentReportsModalOpen}
+          onClose={() => setIsParentReportsModalOpen(false)}
+          group={group}
+          students={students}
+          columns={columns}
+          grades={grades}
+          trimester={trimester}
+          teacherInfo={teacherInfo}
+          attendanceRecords={attendanceRecords}
+        />
       )}
     </div>
   );

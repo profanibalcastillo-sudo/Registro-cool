@@ -169,6 +169,7 @@ export function App() {
             onOpenAiRubric={() => setIsAiModalOpen(true)}
             onOpenAiObservations={() => setIsAiModalOpen(true)}
             teacherInfo={teacherInfo}
+            attendanceRecords={attendanceRecords}
           />
         )}
 
