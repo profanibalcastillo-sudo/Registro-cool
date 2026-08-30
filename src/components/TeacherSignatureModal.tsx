@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Save, X, Eraser, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Settings, Save, X, Eraser, CheckCircle2, ShieldCheck, HardDrive, ArrowRight } from 'lucide-react';
 
 interface TeacherSignatureModalProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ interface TeacherSignatureModalProps {
     region: string;
     signatureDataUrl?: string;
   }) => void;
+  onOpenBackupModal?: () => void;
 }
 
 export const TeacherSignatureModal: React.FC<TeacherSignatureModalProps> = ({
@@ -25,6 +26,7 @@ export const TeacherSignatureModal: React.FC<TeacherSignatureModalProps> = ({
   onClose,
   teacherInfo,
   onSaveTeacherInfo,
+  onOpenBackupModal,
 }) => {
   const [info, setInfo] = useState(teacherInfo);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -215,6 +217,34 @@ export const TeacherSignatureModal: React.FC<TeacherSignatureModalProps> = ({
               Dibuja tu firma arriba usando el mouse o tu pantalla táctil.
             </p>
           </div>
+
+          {/* Backup / Export / Import Shortcut */}
+          {onOpenBackupModal && (
+            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center">
+                  <HardDrive className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white">Respaldo y Recuperación de Datos</div>
+                  <div className="text-[10px] text-slate-400">
+                    Exporta e importa respaldos .JSON y gestiona copias locales.
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenBackupModal();
+                }}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <span>Abrir</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
             <button

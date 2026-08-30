@@ -24,6 +24,8 @@ import {
   AcademicCalendarConfig,
   Group,
   TeacherProfile,
+  SystemBackupData,
+  LocalSnapshot,
 } from '../types';
 import {
   INITIAL_GROUPS,
@@ -57,97 +59,213 @@ export function useFirebaseSync() {
 
   // Groups and navigation state
   const [groups, setGroups] = useState<Group[]>(() => {
-    const saved = localStorage.getItem('meduca_groups_v1');
-    return saved ? JSON.parse(saved) : INITIAL_GROUPS;
+    try {
+      const saved = localStorage.getItem('meduca_groups_v1');
+      return saved ? JSON.parse(saved) : INITIAL_GROUPS;
+    } catch {
+      return INITIAL_GROUPS;
+    }
   });
   const [selectedGroupId, setSelectedGroupId] = useState<string>('grp-7a');
   const [selectedTrimester, setSelectedTrimester] = useState<number>(2);
 
   // Core Data
   const [students, setStudents] = useState<Student[]>(() => {
-    const saved = localStorage.getItem('meduca_students_v1');
-    return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
+    try {
+      const saved = localStorage.getItem('meduca_students_v1');
+      return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
+    } catch {
+      return INITIAL_STUDENTS;
+    }
   });
 
   const [evaluationColumns, setEvaluationColumns] = useState<EvaluationColumn[]>(() => {
-    const saved = localStorage.getItem('meduca_eval_cols_v1');
-    return saved ? JSON.parse(saved) : INITIAL_EVALUATION_COLUMNS;
+    try {
+      const saved = localStorage.getItem('meduca_eval_cols_v1');
+      return saved ? JSON.parse(saved) : INITIAL_EVALUATION_COLUMNS;
+    } catch {
+      return INITIAL_EVALUATION_COLUMNS;
+    }
   });
 
   const [grades, setGrades] = useState<Record<string, Grade>>(() => {
-    const saved = localStorage.getItem('meduca_grades_v1');
-    return saved ? JSON.parse(saved) : INITIAL_GRADES_MAP;
+    try {
+      const saved = localStorage.getItem('meduca_grades_v1');
+      return saved ? JSON.parse(saved) : INITIAL_GRADES_MAP;
+    } catch {
+      return INITIAL_GRADES_MAP;
+    }
   });
 
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, AttendanceRecord>>(() => {
-    const saved = localStorage.getItem('meduca_attendance_v1');
-    return saved ? JSON.parse(saved) : INITIAL_ATTENDANCE_MAP;
+    try {
+      const saved = localStorage.getItem('meduca_attendance_v1');
+      return saved ? JSON.parse(saved) : INITIAL_ATTENDANCE_MAP;
+    } catch {
+      return INITIAL_ATTENDANCE_MAP;
+    }
   });
 
   const [themePlanners, setThemePlanners] = useState<ThemePlanner[]>(() => {
-    const saved = localStorage.getItem('meduca_themes_v1');
-    return saved ? JSON.parse(saved) : INITIAL_THEME_PLANNERS;
+    try {
+      const saved = localStorage.getItem('meduca_themes_v1');
+      return saved ? JSON.parse(saved) : INITIAL_THEME_PLANNERS;
+    } catch {
+      return INITIAL_THEME_PLANNERS;
+    }
   });
 
   const [weeklyPlanners, setWeeklyPlanners] = useState<WeeklyPlanner[]>(() => {
-    const saved = localStorage.getItem('meduca_weeklies_v1');
-    return saved ? JSON.parse(saved) : INITIAL_WEEKLY_PLANNERS;
+    try {
+      const saved = localStorage.getItem('meduca_weeklies_v1');
+      return saved ? JSON.parse(saved) : INITIAL_WEEKLY_PLANNERS;
+    } catch {
+      return INITIAL_WEEKLY_PLANNERS;
+    }
   });
 
   const [schedulePeriods, setSchedulePeriods] = useState<SchedulePeriod[]>(() => {
-    const saved = localStorage.getItem('meduca_periods_v1');
-    return saved ? JSON.parse(saved) : INITIAL_SCHEDULE_PERIODS;
+    try {
+      const saved = localStorage.getItem('meduca_periods_v1');
+      return saved ? JSON.parse(saved) : INITIAL_SCHEDULE_PERIODS;
+    } catch {
+      return INITIAL_SCHEDULE_PERIODS;
+    }
   });
 
   const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlot[]>(() => {
-    const saved = localStorage.getItem('meduca_slots_v1');
-    return saved ? JSON.parse(saved) : INITIAL_SCHEDULE_SLOTS;
+    try {
+      const saved = localStorage.getItem('meduca_slots_v1');
+      return saved ? JSON.parse(saved) : INITIAL_SCHEDULE_SLOTS;
+    } catch {
+      return INITIAL_SCHEDULE_SLOTS;
+    }
   });
 
   const [calendarConfig, setCalendarConfig] = useState<AcademicCalendarConfig>(() => {
-    const saved = localStorage.getItem('meduca_calendar_v1');
-    return saved ? JSON.parse(saved) : INITIAL_CALENDAR_CONFIG;
+    try {
+      const saved = localStorage.getItem('meduca_calendar_v1');
+      return saved ? JSON.parse(saved) : INITIAL_CALENDAR_CONFIG;
+    } catch {
+      return INITIAL_CALENDAR_CONFIG;
+    }
   });
 
   const [teacherInfo, setTeacherInfo] = useState<TeacherProfile>(() => {
-    const saved = localStorage.getItem('meduca_teacher_info_v1');
-    return saved ? JSON.parse(saved) : INITIAL_TEACHER_PROFILE;
+    try {
+      const saved = localStorage.getItem('meduca_teacher_info_v1');
+      return saved ? JSON.parse(saved) : INITIAL_TEACHER_PROFILE;
+    } catch {
+      return INITIAL_TEACHER_PROFILE;
+    }
   });
 
-  // Local storage auto-persist
+  // Local Snapshots (History of backups and restore points in LocalStorage)
+  const [localSnapshots, setLocalSnapshots] = useState<LocalSnapshot[]>(() => {
+    try {
+      const saved = localStorage.getItem('meduca_snapshots_v1');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Local storage auto-persist with try-catch safety
   useEffect(() => {
-    localStorage.setItem('meduca_groups_v1', JSON.stringify(groups));
+    try {
+      localStorage.setItem('meduca_groups_v1', JSON.stringify(groups));
+    } catch (e) {
+      console.warn('Storage write notice (groups):', e);
+    }
   }, [groups]);
+
   useEffect(() => {
-    localStorage.setItem('meduca_students_v1', JSON.stringify(students));
+    try {
+      localStorage.setItem('meduca_students_v1', JSON.stringify(students));
+    } catch (e) {
+      console.warn('Storage write notice (students):', e);
+    }
   }, [students]);
+
   useEffect(() => {
-    localStorage.setItem('meduca_eval_cols_v1', JSON.stringify(evaluationColumns));
+    try {
+      localStorage.setItem('meduca_eval_cols_v1', JSON.stringify(evaluationColumns));
+    } catch (e) {
+      console.warn('Storage write notice (eval cols):', e);
+    }
   }, [evaluationColumns]);
+
   useEffect(() => {
-    localStorage.setItem('meduca_grades_v1', JSON.stringify(grades));
+    try {
+      localStorage.setItem('meduca_grades_v1', JSON.stringify(grades));
+    } catch (e) {
+      console.warn('Storage write notice (grades):', e);
+    }
   }, [grades]);
+
   useEffect(() => {
-    localStorage.setItem('meduca_attendance_v1', JSON.stringify(attendanceRecords));
+    try {
+      localStorage.setItem('meduca_attendance_v1', JSON.stringify(attendanceRecords));
+    } catch (e) {
+      console.warn('Storage write notice (attendance):', e);
+    }
   }, [attendanceRecords]);
+
   useEffect(() => {
-    localStorage.setItem('meduca_themes_v1', JSON.stringify(themePlanners));
+    try {
+      localStorage.setItem('meduca_themes_v1', JSON.stringify(themePlanners));
+    } catch (e) {
+      console.warn('Storage write notice (themes):', e);
+    }
   }, [themePlanners]);
+
   useEffect(() => {
-    localStorage.setItem('meduca_weeklies_v1', JSON.stringify(weeklyPlanners));
+    try {
+      localStorage.setItem('meduca_weeklies_v1', JSON.stringify(weeklyPlanners));
+    } catch (e) {
+      console.warn('Storage write notice (weeklies):', e);
+    }
   }, [weeklyPlanners]);
+
   useEffect(() => {
-    localStorage.setItem('meduca_periods_v1', JSON.stringify(schedulePeriods));
+    try {
+      localStorage.setItem('meduca_periods_v1', JSON.stringify(schedulePeriods));
+    } catch (e) {
+      console.warn('Storage write notice (periods):', e);
+    }
   }, [schedulePeriods]);
+
   useEffect(() => {
-    localStorage.setItem('meduca_slots_v1', JSON.stringify(scheduleSlots));
+    try {
+      localStorage.setItem('meduca_slots_v1', JSON.stringify(scheduleSlots));
+    } catch (e) {
+      console.warn('Storage write notice (slots):', e);
+    }
   }, [scheduleSlots]);
+
   useEffect(() => {
-    localStorage.setItem('meduca_calendar_v1', JSON.stringify(calendarConfig));
+    try {
+      localStorage.setItem('meduca_calendar_v1', JSON.stringify(calendarConfig));
+    } catch (e) {
+      console.warn('Storage write notice (calendar):', e);
+    }
   }, [calendarConfig]);
+
   useEffect(() => {
-    localStorage.setItem('meduca_teacher_info_v1', JSON.stringify(teacherInfo));
+    try {
+      localStorage.setItem('meduca_teacher_info_v1', JSON.stringify(teacherInfo));
+    } catch (e) {
+      console.warn('Storage write notice (teacher info):', e);
+    }
   }, [teacherInfo]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('meduca_snapshots_v1', JSON.stringify(localSnapshots));
+    } catch (e) {
+      console.warn('Storage write notice (snapshots):', e);
+    }
+  }, [localSnapshots]);
 
   // Auth observer and redirect result check
   useEffect(() => {
@@ -521,6 +639,335 @@ export function useFirebaseSync() {
     setStudents((prev) => prev.filter((s) => s.id !== studentId));
   }, []);
 
+  // 1. Export Data (Generate JSON Backup Payload)
+  const exportBackupData = useCallback((): SystemBackupData => {
+    return {
+      version: '2026.1',
+      timestamp: new Date().toISOString(),
+      app: 'MEDUCA Registro Digital Docente Panamá',
+      exportedBy: user?.displayName || teacherInfo?.name || 'Prof. Aníbal Castillo',
+      groups,
+      students,
+      evaluationColumns,
+      grades,
+      attendanceRecords,
+      themePlanners,
+      weeklyPlanners,
+      scheduleSlots,
+      schedulePeriods,
+      calendarConfig,
+      teacherInfo,
+    };
+  }, [
+    user,
+    teacherInfo,
+    groups,
+    students,
+    evaluationColumns,
+    grades,
+    attendanceRecords,
+    themePlanners,
+    weeklyPlanners,
+    scheduleSlots,
+    schedulePeriods,
+    calendarConfig,
+  ]);
+
+  // 2. Download JSON Backup File
+  const downloadBackupJSON = useCallback((customFileName?: string) => {
+    const data = exportBackupData();
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().split('T')[0];
+    link.href = url;
+    link.download = customFileName || `MEDUCA_Registro_Respaldo_${dateStr}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [exportBackupData]);
+
+  // 3. Create Local Snapshot (Safety point before modifications)
+  const createLocalSnapshot = useCallback((label?: string): LocalSnapshot => {
+    const currentData = exportBackupData();
+    const newSnapshot: LocalSnapshot = {
+      id: `snap-${Date.now()}`,
+      label: label || `Punto de Control - ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+      createdAt: new Date().toISOString(),
+      itemCounts: {
+        groups: groups.length,
+        students: students.length,
+        grades: Object.keys(grades).length,
+        attendance: Object.keys(attendanceRecords).length,
+        planners: themePlanners.length + weeklyPlanners.length,
+      },
+      data: currentData,
+    };
+
+    setLocalSnapshots((prev) => {
+      // Keep up to 10 latest snapshots in localStorage
+      const updated = [newSnapshot, ...prev].slice(0, 10);
+      try {
+        localStorage.setItem('meduca_snapshots_v1', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Snapshot storage save warning:', e);
+      }
+      return updated;
+    });
+
+    return newSnapshot;
+  }, [
+    exportBackupData,
+    groups.length,
+    students.length,
+    grades,
+    attendanceRecords,
+    themePlanners.length,
+    weeklyPlanners.length,
+  ]);
+
+  // 4. Restore Local Snapshot
+  const restoreLocalSnapshot = useCallback((snapshotId: string): boolean => {
+    const snap = localSnapshots.find((s) => s.id === snapshotId);
+    if (!snap || !snap.data) return false;
+    
+    // Create an emergency pre-restore snapshot
+    createLocalSnapshot('Pre-Restauración de Snapshot');
+
+    const d = snap.data;
+    if (d.groups && Array.isArray(d.groups)) setGroups(d.groups);
+    if (d.students && Array.isArray(d.students)) setStudents(d.students);
+    if (d.evaluationColumns && Array.isArray(d.evaluationColumns)) setEvaluationColumns(d.evaluationColumns);
+    if (d.grades && typeof d.grades === 'object') setGrades(d.grades);
+    if (d.attendanceRecords && typeof d.attendanceRecords === 'object') setAttendanceRecords(d.attendanceRecords);
+    if (d.themePlanners && Array.isArray(d.themePlanners)) setThemePlanners(d.themePlanners);
+    if (d.weeklyPlanners && Array.isArray(d.weeklyPlanners)) setWeeklyPlanners(d.weeklyPlanners);
+    if (d.scheduleSlots && Array.isArray(d.scheduleSlots)) setScheduleSlots(d.scheduleSlots);
+    if (d.schedulePeriods && Array.isArray(d.schedulePeriods)) setSchedulePeriods(d.schedulePeriods);
+    if (d.calendarConfig && typeof d.calendarConfig === 'object') setCalendarConfig(d.calendarConfig);
+    if (d.teacherInfo && typeof d.teacherInfo === 'object') setTeacherInfo(d.teacherInfo);
+
+    if (d.groups && d.groups.length > 0) {
+      setSelectedGroupId(d.groups[0].id);
+    }
+
+    return true;
+  }, [localSnapshots, createLocalSnapshot]);
+
+  // 5. Delete Local Snapshot
+  const deleteLocalSnapshot = useCallback((snapshotId: string) => {
+    setLocalSnapshots((prev) => {
+      const updated = prev.filter((s) => s.id !== snapshotId);
+      try {
+        localStorage.setItem('meduca_snapshots_v1', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Snapshot delete notice:', e);
+      }
+      return updated;
+    });
+  }, []);
+
+  // 6. Import Full Backup from JSON payload (Replace or Merge)
+  const importBackupData = useCallback((
+    backup: Partial<SystemBackupData>,
+    mode: 'replace' | 'merge' = 'replace'
+  ): { success: boolean; message: string; counts: { groups: number; students: number; grades: number; attendance: number; planners: number } } => {
+    try {
+      if (!backup || typeof backup !== 'object') {
+        return {
+          success: false,
+          message: 'El archivo no contiene un formato JSON válido.',
+          counts: { groups: 0, students: 0, grades: 0, attendance: 0, planners: 0 },
+        };
+      }
+
+      // Automatically create a safety snapshot before importing!
+      createLocalSnapshot(`Copia de Seguridad previa a Importación (${mode === 'replace' ? 'Reemplazo' : 'Fusión'})`);
+
+      let nextGroups = groups;
+      let nextStudents = students;
+      let nextEvalCols = evaluationColumns;
+      let nextGrades = grades;
+      let nextAttendance = attendanceRecords;
+      let nextThemePlanners = themePlanners;
+      let nextWeeklyPlanners = weeklyPlanners;
+      let nextScheduleSlots = scheduleSlots;
+      let nextSchedulePeriods = schedulePeriods;
+      let nextCalendar = calendarConfig;
+      let nextTeacher = teacherInfo;
+
+      if (mode === 'replace') {
+        if (Array.isArray(backup.groups)) nextGroups = backup.groups;
+        if (Array.isArray(backup.students)) nextStudents = backup.students;
+        if (Array.isArray(backup.evaluationColumns)) nextEvalCols = backup.evaluationColumns;
+        if (backup.grades && typeof backup.grades === 'object') nextGrades = backup.grades;
+        if (backup.attendanceRecords && typeof backup.attendanceRecords === 'object') nextAttendance = backup.attendanceRecords;
+        if (Array.isArray(backup.themePlanners)) nextThemePlanners = backup.themePlanners;
+        if (Array.isArray(backup.weeklyPlanners)) nextWeeklyPlanners = backup.weeklyPlanners;
+        if (Array.isArray(backup.scheduleSlots)) nextScheduleSlots = backup.scheduleSlots;
+        if (Array.isArray(backup.schedulePeriods)) nextSchedulePeriods = backup.schedulePeriods;
+        if (backup.calendarConfig && typeof backup.calendarConfig === 'object') nextCalendar = backup.calendarConfig;
+        if (backup.teacherInfo && typeof backup.teacherInfo === 'object') nextTeacher = backup.teacherInfo;
+      } else {
+        // Merge mode: combine existing items with new ones
+        if (Array.isArray(backup.groups)) {
+          const groupMap = new Map(nextGroups.map((g) => [g.id, g]));
+          backup.groups.forEach((g) => groupMap.set(g.id, g));
+          nextGroups = Array.from(groupMap.values());
+        }
+
+        if (Array.isArray(backup.students)) {
+          const studentMap = new Map(nextStudents.map((s) => [s.id, s]));
+          backup.students.forEach((s) => studentMap.set(s.id, s));
+          nextStudents = Array.from(studentMap.values());
+        }
+
+        if (Array.isArray(backup.evaluationColumns)) {
+          const colMap = new Map(nextEvalCols.map((c) => [c.id, c]));
+          backup.evaluationColumns.forEach((c) => colMap.set(c.id, c));
+          nextEvalCols = Array.from(colMap.values());
+        }
+
+        if (backup.grades && typeof backup.grades === 'object') {
+          nextGrades = { ...nextGrades, ...backup.grades };
+        }
+
+        if (backup.attendanceRecords && typeof backup.attendanceRecords === 'object') {
+          nextAttendance = { ...nextAttendance, ...backup.attendanceRecords };
+        }
+
+        if (Array.isArray(backup.themePlanners)) {
+          const themeMap = new Map(nextThemePlanners.map((p) => [p.id, p]));
+          backup.themePlanners.forEach((p) => themeMap.set(p.id, p));
+          nextThemePlanners = Array.from(themeMap.values());
+        }
+
+        if (Array.isArray(backup.weeklyPlanners)) {
+          const weeklyMap = new Map(nextWeeklyPlanners.map((w) => [w.id, w]));
+          backup.weeklyPlanners.forEach((w) => weeklyMap.set(w.id, w));
+          nextWeeklyPlanners = Array.from(weeklyMap.values());
+        }
+
+        if (Array.isArray(backup.scheduleSlots)) {
+          const slotMap = new Map(nextScheduleSlots.map((s) => [s.id, s]));
+          backup.scheduleSlots.forEach((s) => slotMap.set(s.id, s));
+          nextScheduleSlots = Array.from(slotMap.values());
+        }
+
+        if (backup.calendarConfig) {
+          nextCalendar = { ...nextCalendar, ...backup.calendarConfig };
+        }
+
+        if (backup.teacherInfo) {
+          nextTeacher = { ...nextTeacher, ...backup.teacherInfo };
+        }
+      }
+
+      // Apply state
+      setGroups(nextGroups);
+      setStudents(nextStudents);
+      setEvaluationColumns(nextEvalCols);
+      setGrades(nextGrades);
+      setAttendanceRecords(nextAttendance);
+      setThemePlanners(nextThemePlanners);
+      setWeeklyPlanners(nextWeeklyPlanners);
+      setScheduleSlots(nextScheduleSlots);
+      setSchedulePeriods(nextSchedulePeriods);
+      setCalendarConfig(nextCalendar);
+      setTeacherInfo(nextTeacher);
+
+      if (nextGroups.length > 0) {
+        setSelectedGroupId(nextGroups[0].id);
+      }
+
+      // Force synchronous LocalStorage persistence
+      try {
+        localStorage.setItem('meduca_groups_v1', JSON.stringify(nextGroups));
+        localStorage.setItem('meduca_students_v1', JSON.stringify(nextStudents));
+        localStorage.setItem('meduca_eval_cols_v1', JSON.stringify(nextEvalCols));
+        localStorage.setItem('meduca_grades_v1', JSON.stringify(nextGrades));
+        localStorage.setItem('meduca_attendance_v1', JSON.stringify(nextAttendance));
+        localStorage.setItem('meduca_themes_v1', JSON.stringify(nextThemePlanners));
+        localStorage.setItem('meduca_weeklies_v1', JSON.stringify(nextWeeklyPlanners));
+        localStorage.setItem('meduca_slots_v1', JSON.stringify(nextScheduleSlots));
+        localStorage.setItem('meduca_periods_v1', JSON.stringify(nextSchedulePeriods));
+        localStorage.setItem('meduca_calendar_v1', JSON.stringify(nextCalendar));
+        localStorage.setItem('meduca_teacher_info_v1', JSON.stringify(nextTeacher));
+      } catch (e) {
+        console.warn('Direct storage write after import warning:', e);
+      }
+
+      return {
+        success: true,
+        message: 'Datos restaurados e importados exitosamente.',
+        counts: {
+          groups: nextGroups.length,
+          students: nextStudents.length,
+          grades: Object.keys(nextGrades).length,
+          attendance: Object.keys(nextAttendance).length,
+          planners: nextThemePlanners.length + nextWeeklyPlanners.length,
+        },
+      };
+    } catch (err: any) {
+      console.error('Import error:', err);
+      return {
+        success: false,
+        message: `Error al procesar el archivo: ${err?.message || 'Formato inválido'}`,
+        counts: { groups: 0, students: 0, grades: 0, attendance: 0, planners: 0 },
+      };
+    }
+  }, [
+    createLocalSnapshot,
+    groups,
+    students,
+    evaluationColumns,
+    grades,
+    attendanceRecords,
+    themePlanners,
+    weeklyPlanners,
+    scheduleSlots,
+    schedulePeriods,
+    calendarConfig,
+    teacherInfo,
+  ]);
+
+  // 7. Local Storage Diagnostics / Status
+  const getStorageDiagnostics = useCallback(() => {
+    let totalBytes = 0;
+    const keys: Record<string, number> = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('meduca_')) {
+          const val = localStorage.getItem(key) || '';
+          const bytes = val.length * 2; // UTF-16 approximate
+          totalBytes += bytes;
+          keys[key] = Math.round(bytes / 1024);
+        }
+      }
+    } catch (e) {
+      console.warn('Storage diagnostic calculation warning:', e);
+    }
+    return {
+      localStorageSizeKB: Math.round(totalBytes / 1024),
+      keys,
+      totalGroups: groups.length,
+      totalStudents: students.length,
+      totalGrades: Object.keys(grades).length,
+      totalAttendance: Object.keys(attendanceRecords).length,
+      totalPlanners: themePlanners.length + weeklyPlanners.length,
+    };
+  }, [
+    groups.length,
+    students.length,
+    grades,
+    attendanceRecords,
+    themePlanners.length,
+    weeklyPlanners.length,
+  ]);
+
   return {
     user,
     currentUser: user,
@@ -567,5 +1014,14 @@ export function useFirebaseSync() {
     updateStudent,
     deleteStudent,
     manualSync: syncToCloud,
+    // Backup, Export, Import & Local Storage
+    exportBackupData,
+    downloadBackupJSON,
+    importBackupData,
+    localSnapshots,
+    createLocalSnapshot,
+    restoreLocalSnapshot,
+    deleteLocalSnapshot,
+    getStorageDiagnostics,
   };
 }

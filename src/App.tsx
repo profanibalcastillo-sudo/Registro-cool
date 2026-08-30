@@ -14,6 +14,7 @@ import { GroupsModal } from './components/GroupsModal';
 import { TeacherSignatureModal } from './components/TeacherSignatureModal';
 import { AiAssistantModal } from './components/AiAssistantModal';
 import { DeployGuideModal } from './components/DeployGuideModal';
+import { BackupRestoreModal } from './components/BackupRestoreModal';
 import { getCurrentPeriodInfo } from './data/initialData';
 import { playSchoolBell, playWarningBell } from './services/soundEffects';
 import { CurrentPeriodInfo, ThemePlanner } from './types';
@@ -57,6 +58,15 @@ export function App() {
     addStudent,
     updateStudent,
     deleteStudent,
+    manualSync,
+    exportBackupData,
+    downloadBackupJSON,
+    importBackupData,
+    localSnapshots,
+    createLocalSnapshot,
+    restoreLocalSnapshot,
+    deleteLocalSnapshot,
+    getStorageDiagnostics,
   } = useFirebaseSync();
 
   // Active navigation tab
@@ -71,6 +81,7 @@ export function App() {
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
   // Audio Bell State & Countdown
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
@@ -148,6 +159,7 @@ export function App() {
         onOpenSignatureModal={() => setIsSignatureModalOpen(true)}
         onOpenAiModal={() => setIsAiModalOpen(true)}
         onOpenDeployGuide={() => setIsDeployModalOpen(true)}
+        onOpenBackupModal={() => setIsBackupModalOpen(true)}
         currentPeriodInfo={currentPeriodInfo}
         onTriggerBellSound={handleTriggerBellSound}
       />
@@ -265,6 +277,34 @@ export function App() {
         onClose={() => setIsSignatureModalOpen(false)}
         teacherInfo={teacherInfo}
         onSaveTeacherInfo={saveTeacherInfo}
+        onOpenBackupModal={() => setIsBackupModalOpen(true)}
+      />
+
+      {/* Backup, Export & Import Modal */}
+      <BackupRestoreModal
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+        groups={groups}
+        students={students}
+        evaluationColumns={evaluationColumns}
+        grades={grades}
+        attendanceRecords={attendanceRecords}
+        themePlanners={themePlanners}
+        weeklyPlanners={weeklyPlanners}
+        scheduleSlots={scheduleSlots}
+        schedulePeriods={schedulePeriods}
+        calendarConfig={calendarConfig}
+        teacherInfo={teacherInfo}
+        exportBackupData={exportBackupData}
+        downloadBackupJSON={downloadBackupJSON}
+        importBackupData={importBackupData}
+        localSnapshots={localSnapshots}
+        createLocalSnapshot={createLocalSnapshot}
+        restoreLocalSnapshot={restoreLocalSnapshot}
+        deleteLocalSnapshot={deleteLocalSnapshot}
+        getStorageDiagnostics={getStorageDiagnostics}
+        syncStatus={syncStatus}
+        onManualCloudSync={manualSync}
       />
 
       {/* AI Assistant Modal */}

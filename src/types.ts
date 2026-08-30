@@ -324,3 +324,35 @@ export interface CurrentPeriodInfo {
   timeRemaining: string | null;
   minutesRemaining: number | null;
 }
+
+export interface SystemBackupData {
+  version: string;
+  timestamp: string;
+  app: string;
+  exportedBy?: string;
+  groups: Group[];
+  students: Student[];
+  evaluationColumns: EvaluationColumn[];
+  grades: Record<string, Grade>;
+  attendanceRecords: Record<string, AttendanceRecord>;
+  themePlanners: ThemePlanner[];
+  weeklyPlanners: WeeklyPlanner[];
+  scheduleSlots: ScheduleSlot[];
+  schedulePeriods: SchedulePeriod[];
+  calendarConfig: AcademicCalendarConfig;
+  teacherInfo: TeacherProfile;
+}
+
+export interface LocalSnapshot {
+  id: string;
+  label: string;
+  createdAt: string;
+  itemCounts: {
+    groups: number;
+    students: number;
+    grades: number;
+    attendance: number;
+    planners: number;
+  };
+  data: SystemBackupData;
+}

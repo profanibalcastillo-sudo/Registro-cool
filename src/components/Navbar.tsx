@@ -16,6 +16,7 @@ import {
   FileText,
   Volume2,
   Github,
+  HardDrive,
 } from 'lucide-react';
 import { Group, CurrentPeriodInfo } from '../types';
 
@@ -36,6 +37,7 @@ interface NavbarProps {
   onOpenSignatureModal: () => void;
   onOpenAiModal: () => void;
   onOpenDeployGuide: () => void;
+  onOpenBackupModal: () => void;
   currentPeriodInfo: CurrentPeriodInfo;
   onTriggerBellSound?: () => void;
 }
@@ -57,6 +59,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSignatureModal,
   onOpenAiModal,
   onOpenDeployGuide,
+  onOpenBackupModal,
   currentPeriodInfo,
   onTriggerBellSound,
 }) => {
@@ -128,6 +131,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Github className="w-3.5 h-3.5" />
             <span className="hidden md:inline">GitHub / Vercel</span>
+          </button>
+
+          {/* Backup / Export / Import Button */}
+          <button
+            type="button"
+            onClick={onOpenBackupModal}
+            title="Centro de Respaldo, Exportar/Importar JSON y Puntos de Control"
+            className="px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-300 border border-emerald-500/50 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+          >
+            <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">Respaldo / Importar</span>
           </button>
 
           {/* Quick Sound Bell Button */}
@@ -384,6 +398,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/60 cursor-pointer"
             >
               <Settings className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={onOpenBackupModal}
+              title="Respaldo, Exportar/Importar y Puntos de Control"
+              className="p-1.5 rounded-lg text-emerald-400 hover:text-white hover:bg-slate-800 border border-slate-700/60 cursor-pointer"
+            >
+              <HardDrive className="w-3.5 h-3.5" />
             </button>
           </div>
         </nav>
