@@ -15,6 +15,7 @@ import {
   Settings,
   FileText,
   Volume2,
+  Github,
 } from 'lucide-react';
 import { Group, CurrentPeriodInfo } from '../types';
 
@@ -33,6 +34,8 @@ interface NavbarProps {
   onOpenStudentsModal: () => void;
   onOpenGroupsModal: () => void;
   onOpenSignatureModal: () => void;
+  onOpenAiModal: () => void;
+  onOpenDeployGuide: () => void;
   currentPeriodInfo: CurrentPeriodInfo;
   onTriggerBellSound?: () => void;
 }
@@ -52,10 +55,21 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenStudentsModal,
   onOpenGroupsModal,
   onOpenSignatureModal,
+  onOpenAiModal,
+  onOpenDeployGuide,
   currentPeriodInfo,
   onTriggerBellSound,
 }) => {
-  const selectedGroup = groups.find((g) => g.id === selectedGroupId) || groups[0];
+  const safeGroups = Array.isArray(groups) ? groups : [];
+  const selectedGroup =
+    safeGroups.find((g) => g.id === selectedGroupId) ||
+    safeGroups[0] || {
+      id: 'default',
+      name: 'Grupo MEDUCA',
+      subject: 'Docente',
+      grade: 'General',
+      level: 'secondary',
+    };
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white shadow-xl">
@@ -93,17 +107,39 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Right: Sound Bell, Cloud Sync, Profile & Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* AI Assistant Direct Button */}
+          <button
+            type="button"
+            onClick={onOpenAiModal}
+            title="Abrir Asistente IA Docente MEDUCA (Planeamientos, Rúbricas, Observaciones)"
+            className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/50 hover:to-blue-600/50 text-purple-200 border border-purple-500/50 text-[11px] font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-sm animate-pulse"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden sm:inline">IA MEDUCA</span>
+          </button>
+
+          {/* Export / Deploy to GitHub & Vercel */}
+          <button
+            type="button"
+            onClick={onOpenDeployGuide}
+            title="Guía para Exportar a GitHub y Desplegar en Vercel"
+            className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <Github className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">GitHub / Vercel</span>
+          </button>
+
           {/* Quick Sound Bell Button */}
           {onTriggerBellSound && (
             <button
               type="button"
               onClick={onTriggerBellSound}
               title="Tocar timbre escolar acústico"
-              className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-2 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Volume2 className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Probar Timbre</span>
+              <span className="hidden lg:inline">Timbre</span>
             </button>
           )}
 

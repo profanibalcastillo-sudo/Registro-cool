@@ -24,6 +24,7 @@ interface ThemePlannerViewProps {
   trimester: number;
   themePlanners: ThemePlanner[];
   onSaveThemePlanner: (planner: ThemePlanner) => void;
+  onOpenAiPlanner?: () => void;
   teacherInfo: {
     name: string;
     email: string;
@@ -35,16 +36,19 @@ interface ThemePlannerViewProps {
 export const ThemePlannerView: React.FC<ThemePlannerViewProps> = ({
   group,
   trimester,
-  themePlanners,
+  themePlanners = [],
   onSaveThemePlanner,
+  onOpenAiPlanner,
   teacherInfo,
 }) => {
+  const safePlanners = Array.isArray(themePlanners) ? themePlanners : [];
+
   // Find or create planner for current group & trimester
   const activePlanner =
-    themePlanners.find(
+    safePlanners.find(
       (p) => p.groupId === group.id && p.trimester === trimester
     ) ||
-    themePlanners[0] ||
+    safePlanners[0] ||
     createNewThemePlanner(group.id, trimester, 1, 'First, I Cut the Paper.', 'Following Instructions at School (S1)', 'A1.3', '7mo Grado');
 
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(
@@ -90,7 +94,19 @@ export const ThemePlannerView: React.FC<ThemePlannerViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {onOpenAiPlanner && (
+            <button
+              type="button"
+              onClick={onOpenAiPlanner}
+              title="Generar planeamiento curricular completo con IA Gemini"
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-600/30 animate-pulse"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>Generar con IA MEDUCA</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handlePrint}

@@ -18,6 +18,7 @@ interface WeeklyPlannerViewProps {
   trimester: number;
   weeklyPlanners: WeeklyPlanner[];
   onSaveWeeklyPlanner: (planner: WeeklyPlanner) => void;
+  onOpenAiPlanner?: () => void;
   teacherInfo: {
     name: string;
     email: string;
@@ -29,18 +30,21 @@ interface WeeklyPlannerViewProps {
 export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
   group,
   trimester,
-  weeklyPlanners,
+  weeklyPlanners = [],
   onSaveWeeklyPlanner,
+  onOpenAiPlanner,
   teacherInfo,
 }) => {
   const [selectedWeekNumber, setSelectedWeekNumber] = useState<number>(1);
 
+  const safePlanners = Array.isArray(weeklyPlanners) ? weeklyPlanners : [];
+
   // Find or generate plan for selected week
   const activePlanner =
-    weeklyPlanners.find(
+    safePlanners.find(
       (w) => w.groupId === group.id && w.trimester === trimester && w.weekNumber === selectedWeekNumber
     ) ||
-    weeklyPlanners.find((w) => w.groupId === group.id && w.trimester === trimester) ||
+    safePlanners.find((w) => w.groupId === group.id && w.trimester === trimester) ||
     generateNewWeeklyPlanner(group.id, trimester, selectedWeekNumber);
 
   const [currentPlan, setCurrentPlan] = useState<WeeklyPlanner>(activePlanner);
@@ -96,6 +100,18 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
               </button>
             ))}
           </div>
+
+          {onOpenAiPlanner && (
+            <button
+              type="button"
+              onClick={onOpenAiPlanner}
+              title="Generar plan didáctico con IA Gemini"
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-600/30"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>Generar con IA</span>
+            </button>
+          )}
 
           <button
             type="button"

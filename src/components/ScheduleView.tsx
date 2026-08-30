@@ -44,7 +44,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
 
   // Helper to find slot
   const getSlot = (dayOfWeek: string, periodNumber: number): ScheduleSlot | undefined => {
-    return slots.find((s) => s.dayOfWeek === dayOfWeek && s.periodNumber === periodNumber);
+    return (slots || []).find((s) => s.dayOfWeek === dayOfWeek && s.periodNumber === periodNumber);
   };
 
   const handleSaveSlot = (e: React.FormEvent) => {

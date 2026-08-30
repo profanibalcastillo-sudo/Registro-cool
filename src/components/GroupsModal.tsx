@@ -124,7 +124,7 @@ export const GroupsModal: React.FC<GroupsModalProps> = ({
     e.preventDefault();
     if (!editingGroupId) return;
 
-    const existing = groups.find((g) => g.id === editingGroupId);
+    const existing = (groups || []).find((g) => g.id === editingGroupId);
     if (!existing) return;
 
     const updated: Group = {
