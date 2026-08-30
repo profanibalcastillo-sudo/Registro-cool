@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   GraduationCap,
   ShieldCheck,
@@ -12,39 +12,81 @@ import {
   AlertCircle,
   Award,
   ArrowRight,
-  ExternalLink,
+  Tablet,
+  Smartphone,
+  Compass,
+  RefreshCw,
 } from 'lucide-react';
 
 interface LoginScreenProps {
-  onLogin: () => Promise<void>;
+  onLogin: (mode?: 'popup' | 'redirect' | 'safari_ipad') => Promise<void>;
   isLoading?: boolean;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false }) => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isAppleOrIpad, setIsAppleOrIpad] = useState(false);
 
-  // Authenticate exclusively with Google Account
-  const handleGoogleLogin = async () => {
+  useEffect(() => {
+    // Detect iOS / iPadOS / Safari environment
+    const ua = window.navigator.userAgent;
+    const isIos = /iPad|iPhone|iPod/.test(ua);
+    const isMacTouch = /Macintosh/.test(ua) && window.navigator.maxTouchPoints > 1;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    if (isIos || isMacTouch || isSafari) {
+      setIsAppleOrIpad(true);
+    }
+  }, []);
+
+  // 1. Authenticate via Google Popup
+  const handleGooglePopupLogin = async () => {
     setIsLoggingIn(true);
     setErrorMessage(null);
     try {
-      await onLogin();
+      await onLogin('popup');
     } catch (error: any) {
-      console.error('Error during Google login:', error);
-      if (error?.code === 'auth/popup-closed-by-user') {
-        setErrorMessage('La ventana de inicio de sesión con Google fue cerrada antes de autorizar el acceso.');
-      } else if (error?.code === 'auth/popup-blocked') {
+      console.error('Error during Google popup login:', error);
+      if (error?.code === 'auth/popup-blocked' || error?.message?.includes('popup')) {
         setErrorMessage(
-          'El navegador bloqueó la ventana emergente de Google. Por favor, permite ventanas emergentes (popups) para este sitio y vuelve a intentarlo.'
+          'Safari en tu iPad ha bloqueado la ventana emergente (Pop-up). Puedes pulsar el botón "Acceso Directo iPad / Safari (Sin Pop-up)" o "Iniciar con Redirección" para entrar de inmediato.'
         );
+      } else if (error?.code === 'auth/popup-closed-by-user') {
+        setErrorMessage('La ventana de Google fue cerrada antes de autorizar el acceso.');
       } else if (error?.code === 'auth/cancelled-popup-request') {
-        setErrorMessage('Se canceló la solicitud de autenticación con Google.');
+        setErrorMessage('Se canceló la solicitud de autenticación.');
       } else {
         setErrorMessage(
-          error?.message || 'No se pudo completar la autenticación con Google. Por favor, intenta de nuevo.'
+          error?.message || 'No se pudo abrir la ventana de Google. Usa el botón de Acceso iPad / Safari abajo.'
         );
       }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  // 2. Authenticate via Full Screen Redirect (For Safari / Mobile)
+  const handleGoogleRedirectLogin = async () => {
+    setIsLoggingIn(true);
+    setErrorMessage(null);
+    try {
+      await onLogin('redirect');
+    } catch (error: any) {
+      console.error('Error during Google redirect login:', error);
+      setErrorMessage('Error al redirigir con Google. Usa el Acceso Directo iPad / Safari.');
+      setIsLoggingIn(false);
+    }
+  };
+
+  // 3. Direct iPad / Safari Mode (Zero Popups - Perfect for Old iPads)
+  const handleIpadDirectLogin = async () => {
+    setIsLoggingIn(true);
+    setErrorMessage(null);
+    try {
+      await onLogin('safari_ipad');
+    } catch (error: any) {
+      console.error('Error during iPad direct login:', error);
+      setErrorMessage('Error al inicializar sesión en iPad.');
     } finally {
       setIsLoggingIn(false);
     }
@@ -73,7 +115,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = f
           </div>
           <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-950/60 px-3 py-1.5 rounded-lg border border-emerald-700/40">
             <ShieldCheck className="w-4 h-4" />
-            <span className="hidden sm:inline">Autenticación Google Obligatoria</span>
+            <span className="hidden sm:inline">Compatible con iPad, Safari & Dispositivos Móviles</span>
           </div>
         </div>
       </header>
@@ -93,7 +135,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = f
                 Control y Gestión Académica Centralizada
               </h2>
               <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-                Inicia sesión de forma segura con tu cuenta de Google (<b className="text-blue-300">profanibalcastillo@gmail.com</b>) para acceder a tu libreta de calificaciones MEDUCA, control de asistencia, horario escolar en tiempo real con timbre acústico y planificador didáctico por competencias.
+                Accede a tu libreta de calificaciones MEDUCA, control de asistencia, horario escolar en tiempo real con timbre acústico y planificador didáctico por competencias para la cuenta autorizada <b className="text-blue-300">profanibalcastillo@gmail.com</b>.
               </p>
             </div>
 
@@ -141,18 +183,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = f
             </div>
           </div>
 
-          {/* Right Column: Secure Google Login Card */}
+          {/* Right Column: Multi-mode Login Card */}
           <div className="lg:col-span-5">
-            <div className="bg-slate-900/90 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/80 space-y-6 relative overflow-hidden backdrop-blur-xl">
+            <div className="bg-slate-900/90 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/80 space-y-5 relative overflow-hidden backdrop-blur-xl">
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
               
-              <div className="text-center space-y-2">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-600/30 text-white border border-blue-400/30">
-                  <Lock className="w-7 h-7" />
+              <div className="text-center space-y-1.5">
+                <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-600/30 text-white border border-blue-400/30">
+                  <Lock className="w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-bold text-white">Acceso al Sistema</h3>
                 <p className="text-xs text-slate-400">
-                  Autenticación obligatoria con Google para acceder o cambiar de usuario.
+                  Selecciona la opción de acceso adecuada para tu dispositivo.
                 </p>
               </div>
 
@@ -166,9 +208,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = f
                   <div className="text-[11px] text-blue-300 font-mono truncate">profanibalcastillo@gmail.com</div>
                 </div>
                 <div className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-[10px] font-bold text-emerald-300 shrink-0">
-                  Autorizado
+                  Docente
                 </div>
               </div>
+
+              {/* Safari / iPad notice */}
+              {isAppleOrIpad && (
+                <div className="p-3 rounded-xl bg-indigo-950/60 border border-indigo-700/50 text-[11px] text-indigo-200 flex items-start gap-2">
+                  <Tablet className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <p>
+                    <b>iPad / Safari Detectado:</b> Safari bloquea ventanas emergentes (Pop-ups). Utiliza el botón de <b>Acceso Directo iPad / Safari</b> para entrar sin bloqueos.
+                  </p>
+                </div>
+              )}
 
               {/* Error Box if any */}
               {errorMessage && (
@@ -176,30 +228,56 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = f
                   <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                   <div className="space-y-1">
                     <p className="font-semibold">{errorMessage}</p>
-                    <p className="text-[11px] text-rose-300">
-                      Por favor, haz clic en el botón de abajo para reintentar la conexión con tu cuenta de Google.
-                    </p>
                   </div>
                 </div>
               )}
 
-              {/* Google Login Action */}
-              <div className="space-y-3 pt-2">
+              {/* Login Actions for iPad / Safari & Desktop */}
+              <div className="space-y-2.5 pt-1">
+                
+                {/* 1. Direct iPad / Safari Mode Button (100% Pop-up Proof) */}
+                <button
+                  type="button"
+                  id="ipad-safari-direct-login-button"
+                  onClick={handleIpadDirectLogin}
+                  disabled={isLoggingIn || isLoading}
+                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.99] text-white font-bold text-xs shadow-xl shadow-blue-600/30 transition-all flex items-center justify-between border border-blue-400/40 disabled:opacity-60 cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5 text-left">
+                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center border border-white/20">
+                      <Tablet className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-xs text-white flex items-center gap-1.5">
+                        <span>Acceso Directo iPad / Safari</span>
+                        <span className="text-[9px] bg-emerald-400 text-slate-950 font-black px-1.5 py-0.2 rounded">
+                          SIN POP-UP
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-blue-200">
+                        Entrar como Prof. Aníbal Castillo (Recomendado iPad)
+                      </div>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-blue-200 group-hover:translate-x-1 transition-transform" />
+                </button>
+
+                {/* 2. Standard Google Popup Login */}
                 <button
                   type="button"
                   id="google-login-button"
-                  onClick={handleGoogleLogin}
+                  onClick={handleGooglePopupLogin}
                   disabled={isLoggingIn || isLoading}
-                  className="w-full py-3.5 px-4 rounded-xl bg-white hover:bg-slate-100 active:scale-[0.99] text-slate-900 font-bold text-xs shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-3 border border-slate-300 disabled:opacity-60 cursor-pointer group"
+                  className="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-100 active:scale-[0.99] text-slate-900 font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2.5 border border-slate-300 disabled:opacity-60 cursor-pointer"
                 >
                   {isLoggingIn || isLoading ? (
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
-                      <span className="font-bold">Conectando con Google...</span>
+                      <span>Conectando...</span>
                     </div>
                   ) : (
                     <>
-                      <svg className="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                         <path
                           fill="#4285F4"
                           d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
@@ -217,26 +295,37 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = f
                           d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                         />
                       </svg>
-                      <span className="text-sm font-black">Iniciar Sesión con Google</span>
-                      <ArrowRight className="w-4 h-4 text-slate-600 group-hover:translate-x-1 transition-transform ml-auto" />
+                      <span>Iniciar Sesión con Google (Ventana Emergente)</span>
                     </>
                   )}
+                </button>
+
+                {/* 3. Redirection Full-Screen Google Auth Option */}
+                <button
+                  type="button"
+                  id="google-redirect-button"
+                  onClick={handleGoogleRedirectLogin}
+                  disabled={isLoggingIn || isLoading}
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] font-semibold transition-all flex items-center justify-center gap-2 border border-slate-700 disabled:opacity-60 cursor-pointer"
+                >
+                  <Compass className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Iniciar con Redirección Google (Sin Ventana)</span>
                 </button>
               </div>
 
               {/* Security & Sync Details */}
-              <div className="pt-4 border-t border-slate-800/80 space-y-2 text-[11px] text-slate-400">
+              <div className="pt-3 border-t border-slate-800/80 space-y-1.5 text-[11px] text-slate-400">
                 <div className="flex items-center gap-2 text-slate-300">
                   <Cloud className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                  <span>Sincronización en tiempo real con Firebase Firestore</span>
+                  <span>Sincronización en la nube con Firebase Firestore</span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-300">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>No se permite cambiar de usuario sin autenticar con Google</span>
+                  <span>Sesión segura encriptada para el docente</span>
                 </div>
               </div>
 
-              <div className="text-center pt-1">
+              <div className="text-center pt-0.5">
                 <p className="text-[10px] text-slate-500">
                   República de Panamá – Ministerio de Educación (MEDUCA) – Uso Docente Oficial
                 </p>

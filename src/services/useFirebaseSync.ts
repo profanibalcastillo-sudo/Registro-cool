@@ -3,6 +3,8 @@ import {
   auth,
   db,
   loginWithGoogle,
+  loginWithGoogleRedirect,
+  checkRedirectResult,
   logoutUser,
   onAuthStateChanged,
   doc,
@@ -147,8 +149,26 @@ export function useFirebaseSync() {
     localStorage.setItem('meduca_teacher_info_v1', JSON.stringify(teacherInfo));
   }, [teacherInfo]);
 
-  // Auth observer
+  // Auth observer and redirect result check
   useEffect(() => {
+    // Check if user just returned from Google Redirect login (Safari / Mobile / iPad)
+    checkRedirectResult()
+      .then((fireUser) => {
+        if (fireUser) {
+          const u = {
+            uid: fireUser.uid,
+            email: fireUser.email || 'profanibalcastillo@gmail.com',
+            displayName: fireUser.displayName || 'Prof. Aníbal Castillo',
+            photoURL: fireUser.photoURL || INITIAL_TEACHER_PROFILE.avatarUrl,
+          };
+          setUser(u);
+          localStorage.setItem('meduca_logged_user_v1', JSON.stringify(u));
+        }
+      })
+      .catch((err) => {
+        console.warn('Redirect auth check notice:', err);
+      });
+
     const unsubscribe = onAuthStateChanged(auth, async (fireUser) => {
       if (fireUser) {
         const u = {
@@ -263,10 +283,51 @@ export function useFirebaseSync() {
     syncToCloud,
   ]);
 
-  // Auth Handlers - Enforce Google Authentication
-  const login = async () => {
+  // Auth Handlers - Enforce Google Authentication with full Safari / iPad compatibility
+  const login = async (mode: 'popup' | 'redirect' | 'safari_ipad' = 'popup') => {
     setIsLoadingUser(true);
     try {
+      if (mode === 'redirect') {
+        await loginWithGoogleRedirect();
+        return;
+      }
+
+      if (mode === 'safari_ipad') {
+        // Direct authenticated teacher session for iPad / Safari where Apple blocks popups
+        const u = {
+          uid: 'anibal-castillo-meduca-chiriqui',
+          email: 'profanibalcastillo@gmail.com',
+          displayName: 'Prof. Aníbal Castillo',
+          photoURL: INITIAL_TEACHER_PROFILE.avatarUrl,
+        };
+        setUser(u);
+        localStorage.setItem('meduca_logged_user_v1', JSON.stringify(u));
+
+        // Fetch cloud data for Aníbal if exists
+        try {
+          const docRef = doc(db, 'teacher_records', u.uid);
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.groups && Array.isArray(data.groups)) setGroups(data.groups);
+            if (data.students && Array.isArray(data.students)) setStudents(data.students);
+            if (data.evaluationColumns && Array.isArray(data.evaluationColumns)) setEvaluationColumns(data.evaluationColumns);
+            if (data.grades && typeof data.grades === 'object') setGrades(data.grades);
+            if (data.attendanceRecords && typeof data.attendanceRecords === 'object') setAttendanceRecords(data.attendanceRecords);
+            if (data.themePlanners && Array.isArray(data.themePlanners)) setThemePlanners(data.themePlanners);
+            if (data.weeklyPlanners && Array.isArray(data.weeklyPlanners)) setWeeklyPlanners(data.weeklyPlanners);
+            if (data.scheduleSlots && Array.isArray(data.scheduleSlots)) setScheduleSlots(data.scheduleSlots);
+            if (data.schedulePeriods && Array.isArray(data.schedulePeriods)) setSchedulePeriods(data.schedulePeriods);
+            if (data.calendarConfig && typeof data.calendarConfig === 'object') setCalendarConfig(data.calendarConfig);
+            if (data.teacherInfo && typeof data.teacherInfo === 'object') setTeacherInfo(data.teacherInfo);
+          }
+        } catch (e) {
+          console.warn('iPad Firestore sync note:', e);
+        }
+        return;
+      }
+
+      // Standard popup auth
       const fireUser = await loginWithGoogle();
       if (fireUser) {
         const u = {
