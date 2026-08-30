@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   Trash2,
@@ -14,6 +14,7 @@ import {
   BarChart2,
   ArrowUpDown,
   Filter,
+  Info,
 } from 'lucide-react';
 import { Student, EvaluationColumn, Grade, Group, AcademicCalendarConfig } from '../types';
 import {
@@ -22,6 +23,7 @@ import {
   calculateGroupStatistics,
   formatGrade,
   getGradeStatus,
+  isPrimaryEducation,
 } from '../utils/gradeCalculations';
 import { exportGradesToCSV, exportToPrintableHTML } from '../utils/exportUtils';
 
@@ -58,6 +60,7 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
   onUpdateColumn,
   teacherInfo,
 }) => {
+  const isPrimary = useMemo(() => isPrimaryEducation(group), [group]);
   const [viewMode, setViewMode] = useState<'trimester' | 'annual'>('trimester');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<'all' | 'formative' | 'summative' | 'exam'>('all');
   const [isAddingColModalOpen, setIsAddingColModalOpen] = useState(false);
@@ -66,6 +69,14 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
   const [newColMaxScore, setNewColMaxScore] = useState<number>(5.0);
   const [searchFilter, setSearchFilter] = useState('');
 
+  // Always reset to summative for Primaria
+  useEffect(() => {
+    if (isPrimary) {
+      setNewColCategory('summative');
+      setActiveCategoryFilter('all');
+    }
+  }, [isPrimary]);
+
   // Filter columns for current group & trimester
   const trimesterColumns = useMemo(() => {
     return columns.filter((col) => col.groupId === group.id && col.trimester === trimester);
@@ -73,9 +84,9 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
 
   // Filtered by category if tab is selected
   const displayedColumns = useMemo(() => {
-    if (activeCategoryFilter === 'all') return trimesterColumns;
+    if (isPrimary || activeCategoryFilter === 'all') return trimesterColumns;
     return trimesterColumns.filter((col) => col.category === activeCategoryFilter);
-  }, [trimesterColumns, activeCategoryFilter]);
+  }, [trimesterColumns, activeCategoryFilter, isPrimary]);
 
   // Filter students by name or document
   const filteredStudents = useMemo(() => {
@@ -93,38 +104,41 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
   const studentTrimesterSummaries = useMemo(() => {
     const map: Record<string, ReturnType<typeof calculateStudentTrimesterGrade>> = {};
     filteredStudents.forEach((student) => {
-      map[student.id] = calculateStudentTrimesterGrade(student.id, trimester, columns, grades);
+      map[student.id] = calculateStudentTrimesterGrade(student.id, trimester, columns, grades, undefined, isPrimary);
     });
     return map;
-  }, [filteredStudents, trimester, columns, grades]);
+  }, [filteredStudents, trimester, columns, grades, isPrimary]);
 
   // Annual calculation
   const studentAnnualSummaries = useMemo(() => {
     const map: Record<string, ReturnType<typeof calculateStudentAnnualSummary>> = {};
     filteredStudents.forEach((student) => {
-      map[student.id] = calculateStudentAnnualSummary(student.id, columns, grades);
+      map[student.id] = calculateStudentAnnualSummary(student.id, columns, grades, undefined, isPrimary);
     });
     return map;
-  }, [filteredStudents, columns, grades]);
+  }, [filteredStudents, columns, grades, isPrimary]);
 
   // Statistics for current trimester
   const groupStats = useMemo(() => {
-    return calculateGroupStatistics(filteredStudents, trimester, columns, grades);
-  }, [filteredStudents, trimester, columns, grades]);
+    return calculateGroupStatistics(filteredStudents, trimester, columns, grades, isPrimary);
+  }, [filteredStudents, trimester, columns, grades, isPrimary]);
 
   // Handle adding new evaluation column
   const handleCreateColumn = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newColTitle.trim()) return;
 
+    const nextParcialNum = trimesterColumns.length + 1;
+    const finalTitle = newColTitle.trim();
+
     const newCol: EvaluationColumn = {
       id: `col-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
       groupId: group.id,
       trimester,
-      title: newColTitle.trim(),
-      category: newColCategory,
+      title: finalTitle,
+      category: isPrimary ? 'summative' : newColCategory,
       maxScore: newColMaxScore || 5.0,
-      weight: 1,
+      weight: isPrimary ? 1 : (newColCategory === 'exam' ? 34 : 33),
       date: new Date().toISOString().split('T')[0],
       createdAt: new Date().toISOString(),
     };
@@ -191,9 +205,16 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
       {/* Top Banner / Controls Bar */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="px-2.5 py-0.5 rounded-md bg-blue-600/30 text-blue-400 font-black text-xs uppercase tracking-wider border border-blue-500/30">
               {group.name} • {group.subject}
+            </span>
+            <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${
+              isPrimary
+                ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30'
+            }`}>
+              {isPrimary ? 'Educación Primaria (1°-6°)' : 'Premedia / Media'}
             </span>
             <span className="text-xs text-slate-400">
               Año Lectivo {calendarConfig.schoolYear}
@@ -205,8 +226,15 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
               (Trimestre {trimester})
             </span>
           </h2>
-          <p className="text-xs text-slate-400">
-            Escala MEDUCA de 1.0 a 5.0 • Ponderación oficial de apreciación, parciales y examen
+          <p className="text-xs text-slate-400 mt-0.5">
+            {isPrimary ? (
+              <span className="text-amber-300/90 font-medium flex items-center gap-1">
+                <Info className="w-3.5 h-3.5 inline-block text-amber-400 shrink-0" />
+                Régimen MEDUCA Primaria: Solo se utilizan Notas Parciales (promedio aritmético directo). No aplican apreciación ni exámenes trimestrales.
+              </span>
+            ) : (
+              'Escala MEDUCA de 1.0 a 5.0 • Ponderación oficial: Apreciación (33%), Parciales (33%) y Examen Trimestral (34%)'
+            )}
           </p>
         </div>
 
@@ -246,7 +274,7 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
               className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-600/30 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Nueva Evaluación</span>
+              <span>{isPrimary ? 'Nuevo Parcial' : 'Nueva Evaluación'}</span>
             </button>
           )}
 
@@ -317,53 +345,64 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        {/* Category Filters (Apreciación / Parciales / Examen) */}
+        {/* Category Filters: Only shown for Premedia/Media. For Primaria, show partials information indicator */}
         {viewMode === 'trimester' && (
           <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
-            <button
-              type="button"
-              onClick={() => setActiveCategoryFilter('all')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                activeCategoryFilter === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
-              }`}
-            >
-              Todas ({trimesterColumns.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveCategoryFilter('formative')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                activeCategoryFilter === 'formative'
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-800 text-emerald-400 hover:text-white'
-              }`}
-            >
-              Apreciación / Formativas (33%)
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveCategoryFilter('summative')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                activeCategoryFilter === 'summative'
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-slate-800 text-amber-400 hover:text-white'
-              }`}
-            >
-              Parciales / Sumativas (33%)
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveCategoryFilter('exam')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                activeCategoryFilter === 'exam'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-slate-800 text-purple-400 hover:text-white'
-              }`}
-            >
-              Examen Trimestral (34%)
-            </button>
+            {isPrimary ? (
+              <div className="flex items-center gap-2 bg-slate-800/80 border border-slate-700/70 rounded-xl px-3 py-1.5 text-xs text-slate-300 font-medium">
+                <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                <span className="font-bold text-white">Notas Parciales registradas:</span>
+                <span className="font-mono text-amber-300 font-bold">{trimesterColumns.length}</span>
+                <span className="text-slate-500 text-[11px] hidden md:inline">| Promedio Aritmético Directo</span>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setActiveCategoryFilter('all')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    activeCategoryFilter === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Todas ({trimesterColumns.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveCategoryFilter('formative')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    activeCategoryFilter === 'formative'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-800 text-emerald-400 hover:text-white'
+                  }`}
+                >
+                  Apreciación / Formativas (33%)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveCategoryFilter('summative')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    activeCategoryFilter === 'summative'
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-slate-800 text-amber-400 hover:text-white'
+                  }`}
+                >
+                  Parciales / Sumativas (33%)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveCategoryFilter('exam')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    activeCategoryFilter === 'exam'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-slate-800 text-purple-400 hover:text-white'
+                  }`}
+                >
+                  Examen Trimestral (34%)
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -393,34 +432,39 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
                   </th>
                   
                   {/* Dynamic Evaluation Columns */}
-                  {displayedColumns.map((col) => {
-                    const catBadge =
-                      col.category === 'formative'
-                        ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/50'
-                        : col.category === 'summative'
-                        ? 'bg-amber-950/80 text-amber-300 border-amber-700/50'
-                        : 'bg-purple-950/80 text-purple-300 border-purple-700/50';
+                  {displayedColumns.map((col, cIdx) => {
+                    const catBadge = isPrimary
+                      ? 'bg-amber-950/80 text-amber-300 border-amber-700/50'
+                      : col.category === 'formative'
+                      ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/50'
+                      : col.category === 'summative'
+                      ? 'bg-amber-950/80 text-amber-300 border-amber-700/50'
+                      : 'bg-purple-950/80 text-purple-300 border-purple-700/50';
+
+                    const badgeText = isPrimary
+                      ? `Parcial ${cIdx + 1}`
+                      : col.category === 'formative'
+                      ? 'Apreciación'
+                      : col.category === 'summative'
+                      ? 'Parcial'
+                      : 'Examen';
 
                     return (
                       <th
                         key={col.id}
-                        className="p-2.5 text-center min-w-[120px] max-w-[150px] border-l border-slate-800/80 relative group"
+                        className="p-2.5 text-center min-w-[120px] max-w-[160px] border-l border-slate-800/80 relative group"
                       >
                         <div className="space-y-1">
                           <span
                             className={`inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 rounded border ${catBadge}`}
                           >
-                            {col.category === 'formative'
-                              ? 'Apreciación'
-                              : col.category === 'summative'
-                              ? 'Parcial'
-                              : 'Examen'}
+                            {badgeText}
                           </span>
                           <div className="font-bold text-white text-xs truncate" title={col.title}>
                             {col.title}
                           </div>
                           <div className="text-[10px] text-slate-500 font-normal">
-                            Máx: {col.maxScore.toFixed(1)}
+                            Escala: 1.0 - {col.maxScore.toFixed(1)}
                           </div>
                         </div>
 
@@ -438,17 +482,22 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
                   })}
 
                   {/* Calculated Category Averages & Final Grade */}
-                  <th className="p-3 text-center min-w-[90px] bg-emerald-950/40 text-emerald-300 border-l border-slate-800">
-                    Prom. Apr.
-                  </th>
-                  <th className="p-3 text-center min-w-[90px] bg-amber-950/40 text-amber-300 border-l border-slate-800">
-                    Prom. Par.
-                  </th>
-                  <th className="p-3 text-center min-w-[90px] bg-purple-950/40 text-purple-300 border-l border-slate-800">
-                    Examen
-                  </th>
-                  <th className="p-3 text-center min-w-[100px] bg-blue-950/60 text-blue-300 border-l border-slate-800 font-black">
-                    Nota Trim {trimester}
+                  {!isPrimary && (
+                    <>
+                      <th className="p-3 text-center min-w-[90px] bg-emerald-950/40 text-emerald-300 border-l border-slate-800">
+                        Prom. Apr.
+                      </th>
+                      <th className="p-3 text-center min-w-[90px] bg-amber-950/40 text-amber-300 border-l border-slate-800">
+                        Prom. Par.
+                      </th>
+                      <th className="p-3 text-center min-w-[90px] bg-purple-950/40 text-purple-300 border-l border-slate-800">
+                        Examen
+                      </th>
+                    </>
+                  )}
+                  
+                  <th className="p-3 text-center min-w-[110px] bg-blue-950/60 text-blue-300 border-l border-slate-800 font-black">
+                    {isPrimary ? `Promedio Trimestral (T${trimester})` : `Nota Trim ${trimester}`}
                   </th>
                   <th className="p-3 text-center min-w-[90px] bg-slate-950 text-slate-400 border-l border-slate-800">
                     Estado
@@ -460,7 +509,7 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
               <tbody className="divide-y divide-slate-800">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan={displayedColumns.length + 7} className="p-8 text-center text-slate-400">
+                    <td colSpan={displayedColumns.length + (isPrimary ? 4 : 7)} className="p-8 text-center text-slate-400">
                       No se encontraron estudiantes para este grupo.
                     </td>
                   </tr>
@@ -526,22 +575,26 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
                           );
                         })}
 
-                        {/* Averages */}
-                        <td className="p-3 text-center font-mono font-bold text-emerald-400 bg-emerald-950/20 border-l border-slate-800">
-                          {summary && summary.formativeAvg > 0
-                            ? formatGrade(summary.formativeAvg)
-                            : '—'}
-                        </td>
-                        <td className="p-3 text-center font-mono font-bold text-amber-400 bg-amber-950/20 border-l border-slate-800">
-                          {summary && summary.summativeAvg > 0
-                            ? formatGrade(summary.summativeAvg)
-                            : '—'}
-                        </td>
-                        <td className="p-3 text-center font-mono font-bold text-purple-400 bg-purple-950/20 border-l border-slate-800">
-                          {summary && summary.examScore > 0
-                            ? formatGrade(summary.examScore)
-                            : '—'}
-                        </td>
+                        {/* Averages (Only for Premedia/Media) */}
+                        {!isPrimary && (
+                          <>
+                            <td className="p-3 text-center font-mono font-bold text-emerald-400 bg-emerald-950/20 border-l border-slate-800">
+                              {summary && summary.formativeAvg > 0
+                                ? formatGrade(summary.formativeAvg)
+                                : '—'}
+                            </td>
+                            <td className="p-3 text-center font-mono font-bold text-amber-400 bg-amber-950/20 border-l border-slate-800">
+                              {summary && summary.summativeAvg > 0
+                                ? formatGrade(summary.summativeAvg)
+                                : '—'}
+                            </td>
+                            <td className="p-3 text-center font-mono font-bold text-purple-400 bg-purple-950/20 border-l border-slate-800">
+                              {summary && summary.examScore > 0
+                                ? formatGrade(summary.examScore)
+                                : '—'}
+                            </td>
+                          </>
+                        )}
 
                         {/* Final Trimester Grade */}
                         <td
@@ -585,7 +638,9 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
                 Consolidado de Calificaciones Anuales
               </h3>
               <p className="text-xs text-slate-400">
-                Ponderación final del año escolar (T1 + T2 + T3 / 3)
+                {isPrimary
+                  ? 'Promedio de los tres trimestres de Primaria (T1 + T2 + T3) ÷ 3'
+                  : 'Ponderación final del año escolar (T1 + T2 + T3) ÷ 3'}
               </p>
             </div>
             <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-400/30">
@@ -686,7 +741,7 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-white text-base flex items-center gap-2">
                 <Plus className="w-5 h-5 text-blue-400" />
-                Nueva Columna de Evaluación
+                {isPrimary ? 'Nueva Nota Parcial (Primaria)' : 'Nueva Columna de Evaluación'}
               </h3>
               <button
                 type="button"
@@ -697,39 +752,61 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
               </button>
             </div>
 
+            {isPrimary && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-2">
+                <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <p>
+                  <strong>Régimen MEDUCA Primaria:</strong> En Educación Primaria solo se registran <strong>Notas Parciales</strong>. El promedio aritmético directo de los parciales conforma la calificación trimestral. No aplican notas de apreciación ni examen.
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleCreateColumn} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Título de la Evaluación:
+                  {isPrimary ? 'Título de la Nota Parcial:' : 'Título de la Evaluación:'}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Ej: Parcial 1: Simple Present, Vocab Quiz..."
+                  placeholder={
+                    isPrimary
+                      ? `Ej: Parcial ${trimesterColumns.length + 1}: Vocabulario, Lectura, Taller...`
+                      : 'Ej: Parcial 1: Simple Present, Vocab Quiz...'
+                  }
                   value={newColTitle}
                   onChange={(e) => setNewColTitle(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Categoría MEDUCA:
-                </label>
-                <select
-                  value={newColCategory}
-                  onChange={(e) => setNewColCategory(e.target.value as any)}
-                  className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
-                >
-                  <option value="summative">Sumativa / Parcial (Ponderación 33%)</option>
-                  <option value="formative">Apreciación / Tareas / Talleres (Ponderación 33%)</option>
-                  <option value="exam">Examen Trimestral Oficial (Ponderación 34%)</option>
-                </select>
-              </div>
+              {!isPrimary ? (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Categoría MEDUCA:
+                  </label>
+                  <select
+                    value={newColCategory}
+                    onChange={(e) => setNewColCategory(e.target.value as any)}
+                    className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
+                  >
+                    <option value="summative">Sumativa / Parcial (Ponderación 33%)</option>
+                    <option value="formative">Apreciación / Tareas / Talleres (Ponderación 33%)</option>
+                    <option value="exam">Examen Trimestral Oficial (Ponderación 34%)</option>
+                  </select>
+                </div>
+              ) : (
+                <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-2.5 text-xs text-slate-300 flex items-center justify-between">
+                  <span className="font-semibold text-slate-400">Tipo de Calificación:</span>
+                  <span className="font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/40 text-[11px]">
+                    Nota Parcial (Promedio Directo)
+                  </span>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Puntaje Máximo (Escala estándar 5.0):
+                  Puntaje Máximo (Escala oficial MEDUCA 1.0 a 5.0):
                 </label>
                 <input
                   type="number"
@@ -754,7 +831,7 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
                   type="submit"
                   className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer"
                 >
-                  Crear Columna
+                  {isPrimary ? 'Crear Nota Parcial' : 'Crear Columna'}
                 </button>
               </div>
             </form>
@@ -764,3 +841,4 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
     </div>
   );
 };
+

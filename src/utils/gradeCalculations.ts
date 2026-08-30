@@ -4,6 +4,7 @@ import {
   EvaluationColumn,
   GradeEntry,
   Grade,
+  Group,
   Student,
   StudentSummaryGrade,
   TrimesterId,
@@ -17,6 +18,32 @@ export const DEFAULT_WEIGHTS: CategoryWeights = {
 };
 
 export const MIN_PASSING_GRADE = 3.0;
+
+/**
+ * Checks if a group or level belongs to MEDUCA Primary Education (1° to 6° Grado).
+ * In Panama MEDUCA Primaria, only partial grades are used (no appreciation/formative weights, no trimestral exams).
+ */
+export function isPrimaryEducation(levelOrGroup?: any): boolean {
+  if (!levelOrGroup) return false;
+  if (typeof levelOrGroup === 'string') {
+    const s = levelOrGroup.toLowerCase();
+    return s.includes('primaria') || s.includes('elementary') || /^[1-6][°º]/.test(s) || /^[1-6](to|ro|do|er|to|mo)/.test(s);
+  }
+  const level = (levelOrGroup.educationLevel || '').toLowerCase();
+  const grade = (levelOrGroup.grade || levelOrGroup.gradeLevel || '').toLowerCase();
+  const name = (levelOrGroup.name || '').toLowerCase();
+  const track = (levelOrGroup.track || '').toLowerCase();
+  return (
+    level.includes('primaria') ||
+    level.includes('elementary') ||
+    track.includes('primaria') ||
+    grade.includes('1°') || grade.includes('2°') || grade.includes('3°') ||
+    grade.includes('4°') || grade.includes('5°') || grade.includes('6°') ||
+    name.includes('primaria') ||
+    /^[1-6][°º]/.test(grade) ||
+    /^[1-6][°º]/.test(name)
+  );
+}
 
 export function formatGrade(grade: number | null | undefined): string {
   if (grade === null || grade === undefined || isNaN(grade) || grade === 0) {
@@ -89,7 +116,8 @@ export function calculateStudentTrimesterSummary(
   arg2: any,
   arg3: any,
   arg4?: any,
-  _weights: CategoryWeights = DEFAULT_WEIGHTS
+  _weights: CategoryWeights = DEFAULT_WEIGHTS,
+  isPrimary?: boolean
 ): StudentSummaryGrade {
   const studentId = typeof studentOrId === 'string' ? studentOrId : studentOrId?.id || '';
 
@@ -121,7 +149,7 @@ export function calculateStudentTrimesterSummary(
     return g.studentId === studentId && actId && actIds.has(actId) && g.score !== null && !isNaN(g.score) && g.score > 0;
   });
 
-  // Calculate by category if possible
+  // Calculate by category
   const formativeActs = trimesterActivities.filter((a) => a.category === 'formative');
   const summativeActs = trimesterActivities.filter((a) => a.category === 'summative');
   const examActs = trimesterActivities.filter((a) => a.category === 'exam');
@@ -145,30 +173,42 @@ export function calculateStudentTrimesterSummary(
   let trimesterGrade: number | null = null;
   const validScores = studentGrades.map((g) => g.score as number);
 
-  // If categories are used with 33/33/34 MEDUCA weighting
-  if (formativeAvg !== null || summativeAvg !== null || examScore !== null) {
-    let weightedSum = 0;
-    let totalWeight = 0;
+  // Check if Primaria mode applies:
+  // In MEDUCA Primaria: strictly direct arithmetic average of all partial scores (no appreciation, no exams)
+  const isPrimariaRegime = isPrimary === true || (formativeActs.length === 0 && examActs.length === 0);
 
-    if (formativeAvg !== null) {
-      weightedSum += formativeAvg * 0.33;
-      totalWeight += 0.33;
+  if (isPrimariaRegime) {
+    // Primaria: Direct arithmetic mean of all partial evaluations
+    if (validScores.length > 0) {
+      const sum = validScores.reduce((acc, curr) => acc + curr, 0);
+      trimesterGrade = Number((sum / validScores.length).toFixed(1));
     }
-    if (summativeAvg !== null) {
-      weightedSum += summativeAvg * 0.33;
-      totalWeight += 0.33;
-    }
-    if (examScore !== null) {
-      weightedSum += examScore * 0.34;
-      totalWeight += 0.34;
-    }
+  } else {
+    // Premedia & Media: 33% Formativa/Apreciación, 33% Sumativa/Parciales, 34% Examen Trimestral
+    if (formativeAvg !== null || summativeAvg !== null || examScore !== null) {
+      let weightedSum = 0;
+      let totalWeight = 0;
 
-    if (totalWeight > 0) {
-      trimesterGrade = Number((weightedSum / totalWeight).toFixed(1));
+      if (formativeAvg !== null) {
+        weightedSum += formativeAvg * 0.33;
+        totalWeight += 0.33;
+      }
+      if (summativeAvg !== null) {
+        weightedSum += summativeAvg * 0.33;
+        totalWeight += 0.33;
+      }
+      if (examScore !== null) {
+        weightedSum += examScore * 0.34;
+        totalWeight += 0.34;
+      }
+
+      if (totalWeight > 0) {
+        trimesterGrade = Number((weightedSum / totalWeight).toFixed(1));
+      }
+    } else if (validScores.length > 0) {
+      const sum = validScores.reduce((acc, curr) => acc + curr, 0);
+      trimesterGrade = Number((sum / validScores.length).toFixed(1));
     }
-  } else if (validScores.length > 0) {
-    const sum = validScores.reduce((acc, curr) => acc + curr, 0);
-    trimesterGrade = Number((sum / validScores.length).toFixed(1));
   }
 
   const isPassing = trimesterGrade !== null ? trimesterGrade >= MIN_PASSING_GRADE : true;
@@ -178,12 +218,12 @@ export function calculateStudentTrimesterSummary(
     studentId,
     activitiesCount: validScores.length,
     activitiesAvg: trimesterGrade,
-    apreciacionAvg: formativeAvg,
-    formativeAvg: formativeAvg ?? 0,
-    summativeAvg: summativeAvg ?? 0,
-    examScore: examScore ?? 0,
+    apreciacionAvg: isPrimariaRegime ? null : formativeAvg,
+    formativeAvg: isPrimariaRegime ? 0 : (formativeAvg ?? 0),
+    summativeAvg: summativeAvg ?? (validScores.length > 0 ? Number((validScores.reduce((a,b)=>a+b,0)/validScores.length).toFixed(2)) : 0),
+    examScore: isPrimariaRegime ? 0 : (examScore ?? 0),
     cotidianasAvg: summativeAvg,
-    examenGrade: examScore,
+    examenGrade: isPrimariaRegime ? null : examScore,
     trimesterGrade,
     finalGrade: trimesterGrade ?? 0,
     formattedGrade: formatGrade(trimesterGrade),
@@ -199,7 +239,8 @@ export function calculateGroupStatistics(
   students: Student[],
   arg2: any,
   arg3: any,
-  arg4?: any
+  arg4?: any,
+  isPrimary?: boolean
 ) {
   let activitiesInput: any;
   let gradesInput: any;
@@ -217,7 +258,7 @@ export function calculateGroupStatistics(
 
   const safeStudents = Array.isArray(students) ? students : [];
   const summaries = safeStudents.map((s) =>
-    calculateStudentTrimesterSummary(s.id, activitiesInput, gradesInput, trimesterInput)
+    calculateStudentTrimesterSummary(s.id, activitiesInput, gradesInput, trimesterInput, DEFAULT_WEIGHTS, isPrimary)
   );
 
   const totalStudents = safeStudents.length;
@@ -270,13 +311,14 @@ export function calculateStudentAnnualSummary(
   studentOrId: string | Student,
   activitiesInput: any,
   gradesInput: any,
-  weights: CategoryWeights = DEFAULT_WEIGHTS
+  weights: CategoryWeights = DEFAULT_WEIGHTS,
+  isPrimary?: boolean
 ): StudentSummaryGrade {
   const studentId = typeof studentOrId === 'string' ? studentOrId : studentOrId?.id || '';
 
-  const t1 = calculateStudentTrimesterSummary(studentId, activitiesInput, gradesInput, 1, weights).trimesterGrade;
-  const t2 = calculateStudentTrimesterSummary(studentId, activitiesInput, gradesInput, 2, weights).trimesterGrade;
-  const t3 = calculateStudentTrimesterSummary(studentId, activitiesInput, gradesInput, 3, weights).trimesterGrade;
+  const t1 = calculateStudentTrimesterSummary(studentId, activitiesInput, gradesInput, 1, weights, isPrimary).trimesterGrade;
+  const t2 = calculateStudentTrimesterSummary(studentId, activitiesInput, gradesInput, 2, weights, isPrimary).trimesterGrade;
+  const t3 = calculateStudentTrimesterSummary(studentId, activitiesInput, gradesInput, 3, weights, isPrimary).trimesterGrade;
 
   const validTrimesters = [t1, t2, t3].filter((t): t is number => t !== null && !isNaN(t) && t > 0);
   let finalAnnualGrade: number | null = null;
@@ -311,3 +353,4 @@ export function calculateStudentAnnualSummary(
     statusLabel: status.label,
   };
 }
+
