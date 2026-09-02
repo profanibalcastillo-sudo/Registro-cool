@@ -65,7 +65,9 @@ export function useFirebaseSync() {
   });
 
   const [isLoadingUser, setIsLoadingUser] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('synced');
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>(() =>
+    typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'synced'
+  );
 
   // Groups and navigation state
   const [groups, setGroups] = useState<Group[]>(() => {
@@ -342,6 +344,10 @@ export function useFirebaseSync() {
   const isCloudSyncing = useRef(false);
   const syncToCloud = useCallback(async () => {
     if (!user || isCloudSyncing.current) return;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setSyncStatus('offline');
+      return;
+    }
     try {
       isCloudSyncing.current = true;
       setSyncStatus('syncing');
@@ -368,7 +374,7 @@ export function useFirebaseSync() {
       );
       setSyncStatus('synced');
     } catch (e) {
-      console.warn('Firestore cloud sync error:', e);
+      console.warn('Firestore cloud sync note (offline/local fallback):', e);
       setSyncStatus('offline');
     } finally {
       isCloudSyncing.current = false;
@@ -387,6 +393,25 @@ export function useFirebaseSync() {
     calendarConfig,
     teacherInfo,
   ]);
+
+  // Online / Offline connectivity listener
+  useEffect(() => {
+    const handleOnline = () => {
+      setSyncStatus('syncing');
+      syncToCloud();
+    };
+    const handleOffline = () => {
+      setSyncStatus('offline');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [syncToCloud]);
 
   // Debounced cloud sync
   useEffect(() => {

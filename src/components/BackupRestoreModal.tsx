@@ -139,6 +139,13 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
 
   // Google Drive Helpers
   const handleConnectDrive = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setStatusMessage({
+        type: 'error',
+        text: 'Estás sin cobertura de internet (Modo Offline). La conexión con Google Drive requiere internet. Puedes descargar el archivo JSON directamente a tu equipo o usar los Puntos de Control Local.',
+      });
+      return;
+    }
     setIsDriveConnecting(true);
     setStatusMessage(null);
     try {
@@ -162,6 +169,7 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
   const loadDriveFiles = async (token?: string) => {
     const activeToken = token || driveToken;
     if (!activeToken) return;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     setIsDriveLoadingFiles(true);
     try {
       const files = await listDriveBackups(activeToken);
@@ -175,6 +183,13 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
   };
 
   const handleUploadToDrive = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setStatusMessage({
+        type: 'error',
+        text: 'Estás sin cobertura de internet (Modo Offline). Puedes descargar el respaldo .JSON directamente a tu dispositivo sin necesidad de conexión.',
+      });
+      return;
+    }
     try {
       let token = driveToken;
       if (!token) {

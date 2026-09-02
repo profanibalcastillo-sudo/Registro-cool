@@ -15,6 +15,7 @@ import { TeacherSignatureModal } from './components/TeacherSignatureModal';
 import { AiAssistantModal } from './components/AiAssistantModal';
 import { DeployGuideModal } from './components/DeployGuideModal';
 import { BackupRestoreModal } from './components/BackupRestoreModal';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { getCurrentPeriodInfo } from './data/initialData';
 import { playSchoolBell, playWarningBell } from './services/soundEffects';
 import { CurrentPeriodInfo, ThemePlanner } from './types';
@@ -355,6 +356,9 @@ export function App() {
         isOpen={isDeployModalOpen}
         onClose={() => setIsDeployModalOpen(false)}
       />
+
+      {/* Offline Status & Storage Indicator */}
+      <OfflineIndicator />
 
       {/* App Footer */}
       <footer className="border-t border-slate-900 bg-slate-950/80 px-6 py-4 text-center text-xs text-slate-500">

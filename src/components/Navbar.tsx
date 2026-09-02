@@ -17,8 +17,10 @@ import {
   Volume2,
   Github,
   HardDrive,
+  WifiOff,
 } from 'lucide-react';
 import { Group, CurrentPeriodInfo } from '../types';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface NavbarProps {
   activeTab: 'gradebook' | 'attendance' | 'schedule' | 'theme-planner' | 'weekly-planner' | 'classroom-tools';
@@ -157,7 +159,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Cloud Sync State */}
+          {/* PWA Install Button for Offline Use */}
+          <PWAInstallButton />
+
+          {/* Sync / Offline State */}
           <div className="flex items-center gap-1.5 text-[11px]">
             {syncStatus === 'syncing' ? (
               <span className="flex items-center gap-1 text-amber-400">
@@ -167,12 +172,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : syncStatus === 'synced' ? (
               <span className="flex items-center gap-1 text-emerald-400 font-medium">
                 <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                <span className="hidden md:inline">Nube Actualizada</span>
+                <span className="hidden md:inline">Sincronizado</span>
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-rose-400">
-                <span className="w-2 h-2 rounded-full bg-rose-400" />
-                <span className="hidden md:inline">Sin conexión</span>
+              <span className="flex items-center gap-1 text-amber-400 font-medium" title="Modo sin internet: Todo tu trabajo se almacena de forma segura en tu dispositivo">
+                <WifiOff className="w-3 h-3 text-amber-400" />
+                <span className="hidden md:inline">Modo Offline (Seguro)</span>
               </span>
             )}
           </div>

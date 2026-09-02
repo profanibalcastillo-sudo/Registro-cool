@@ -26,17 +26,18 @@ export const DeployGuideModal: React.FC<DeployGuideModalProps> = ({ isOpen, onCl
   if (!isOpen) return null;
 
   const safeConfig: any = bundledConfig;
-  const envSample = `# --- CONFIGURACIÓN DE GEMINI AI ---
+  const envSample = `# --- CONFIGURACIÓN DE GEMINI AI (OPCIONAL) ---
 GEMINI_API_KEY="Tu_Clave_de_Google_Gemini_API"
 
-# --- CONFIGURACIÓN DE FIREBASE (MEDUCA) ---
-VITE_FIREBASE_PROJECT_ID="${safeConfig.projectId || 'gen-lang-client-0119326918'}"
-VITE_FIREBASE_APP_ID="${safeConfig.appId || '1:613208611402:web:4563ba3698c31861d4a4b3'}"
-VITE_FIREBASE_API_KEY="${safeConfig.apiKey || 'AIzaSyBVGtx5dV7guOrnHifCdi2A7J2N4MGFRwI'}"
-VITE_FIREBASE_AUTH_DOMAIN="${safeConfig.authDomain || 'gen-lang-client-0119326918.firebaseapp.com'}"
-VITE_FIREBASE_DATABASE_ID="${safeConfig.firestoreDatabaseId || 'ai-studio-remixregistrodig-2eff8f72-b3ec-4c56-a668-a091c72b7c1d'}"
-VITE_FIREBASE_STORAGE_BUCKET="${safeConfig.storageBucket || 'gen-lang-client-0119326918.firebasestorage.app'}"
-VITE_FIREBASE_MESSAGING_SENDER_ID="${safeConfig.messagingSenderId || '613208611402'}"
+# --- CONFIGURACIÓN DE FIREBASE (OPCIONAL PARA MODO NUBE) ---
+# Nota: La aplicación funciona 100% en modo local y offline sin necesidad de internet.
+VITE_FIREBASE_PROJECT_ID="${safeConfig.projectId || 'tu-proyecto-id'}"
+VITE_FIREBASE_APP_ID="${safeConfig.appId || 'tu-app-id'}"
+VITE_FIREBASE_API_KEY="TU_FIREBASE_API_KEY_AQUI"
+VITE_FIREBASE_AUTH_DOMAIN="${safeConfig.authDomain || 'tu-proyecto.firebaseapp.com'}"
+VITE_FIREBASE_DATABASE_ID="${safeConfig.firestoreDatabaseId || 'tu-database-id'}"
+VITE_FIREBASE_STORAGE_BUCKET="${safeConfig.storageBucket || 'tu-proyecto.firebasestorage.app'}"
+VITE_FIREBASE_MESSAGING_SENDER_ID="${safeConfig.messagingSenderId || 'tu-messaging-sender-id'}"
 `;
 
   const handleCopy = (text: string, key: string) => {
