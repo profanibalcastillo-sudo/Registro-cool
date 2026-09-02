@@ -389,6 +389,11 @@ export function useFirebaseSync() {
       setSyncStatus('offline');
       return;
     }
+    // Only attempt Firestore write if user has an active Firebase Auth session matching uid
+    if (!auth.currentUser || auth.currentUser.uid !== user.uid) {
+      setSyncStatus('synced');
+      return;
+    }
     try {
       isCloudSyncing.current = true;
       setSyncStatus('syncing');
@@ -497,26 +502,28 @@ export function useFirebaseSync() {
         setUser(u);
         localStorage.setItem('meduca_logged_user_v1', JSON.stringify(u));
 
-        // Fetch cloud data for Aníbal if exists
-        try {
-          const docRef = doc(db, 'teacher_records', u.uid);
-          const snap = await getDoc(docRef);
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data.groups && Array.isArray(data.groups)) setGroups(data.groups);
-            if (data.students && Array.isArray(data.students)) setStudents(data.students);
-            if (data.evaluationColumns && Array.isArray(data.evaluationColumns)) setEvaluationColumns(data.evaluationColumns);
-            if (data.grades && typeof data.grades === 'object') setGrades(data.grades);
-            if (data.attendanceRecords && typeof data.attendanceRecords === 'object') setAttendanceRecords(data.attendanceRecords);
-            if (data.themePlanners && Array.isArray(data.themePlanners)) setThemePlanners(data.themePlanners);
-            if (data.weeklyPlanners && Array.isArray(data.weeklyPlanners)) setWeeklyPlanners(data.weeklyPlanners);
-            if (data.scheduleSlots && Array.isArray(data.scheduleSlots)) setScheduleSlots(data.scheduleSlots);
-            if (data.schedulePeriods && Array.isArray(data.schedulePeriods)) setSchedulePeriods(data.schedulePeriods);
-            if (data.calendarConfig && typeof data.calendarConfig === 'object') setCalendarConfig(data.calendarConfig);
-            if (data.teacherInfo && typeof data.teacherInfo === 'object') setTeacherInfo(data.teacherInfo);
+        // Fetch cloud data for Aníbal if authenticated
+        if (auth.currentUser && auth.currentUser.uid === u.uid) {
+          try {
+            const docRef = doc(db, 'teacher_records', u.uid);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+              const data = snap.data();
+              if (data.groups && Array.isArray(data.groups)) setGroups(data.groups);
+              if (data.students && Array.isArray(data.students)) setStudents(data.students);
+              if (data.evaluationColumns && Array.isArray(data.evaluationColumns)) setEvaluationColumns(data.evaluationColumns);
+              if (data.grades && typeof data.grades === 'object') setGrades(data.grades);
+              if (data.attendanceRecords && typeof data.attendanceRecords === 'object') setAttendanceRecords(data.attendanceRecords);
+              if (data.themePlanners && Array.isArray(data.themePlanners)) setThemePlanners(data.themePlanners);
+              if (data.weeklyPlanners && Array.isArray(data.weeklyPlanners)) setWeeklyPlanners(data.weeklyPlanners);
+              if (data.scheduleSlots && Array.isArray(data.scheduleSlots)) setScheduleSlots(data.scheduleSlots);
+              if (data.schedulePeriods && Array.isArray(data.schedulePeriods)) setSchedulePeriods(data.schedulePeriods);
+              if (data.calendarConfig && typeof data.calendarConfig === 'object') setCalendarConfig(data.calendarConfig);
+              if (data.teacherInfo && typeof data.teacherInfo === 'object') setTeacherInfo(data.teacherInfo);
+            }
+          } catch (e) {
+            console.warn('iPad Firestore sync note:', e);
           }
-        } catch (e) {
-          console.warn('iPad Firestore sync note:', e);
         }
         return;
       }
