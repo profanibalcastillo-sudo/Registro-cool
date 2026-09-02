@@ -54,6 +54,8 @@ export function App() {
     saveThemePlanner,
     saveWeeklyPlanner,
     updateScheduleSlot,
+    updateSchedulePeriod,
+    resetSchedulePeriods,
     saveCalendarConfig,
     saveTeacherInfo,
     addStudent,
@@ -209,6 +211,8 @@ export function App() {
             slots={scheduleSlots}
             currentPeriodInfo={currentPeriodInfo}
             onUpdateSlot={updateScheduleSlot}
+            onUpdatePeriod={updateSchedulePeriod}
+            onResetPeriods={resetSchedulePeriods}
             isSoundEnabled={isSoundEnabled}
             onToggleSound={() => setIsSoundEnabled(!isSoundEnabled)}
           />

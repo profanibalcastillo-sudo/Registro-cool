@@ -11,6 +11,10 @@ import {
   MapPin,
   CheckCircle2,
   AlertCircle,
+  Settings,
+  RotateCcw,
+  Coffee,
+  Edit3,
 } from 'lucide-react';
 import { SchedulePeriod, ScheduleSlot, CurrentPeriodInfo } from '../types';
 import { playSchoolBell, playWarningBell } from '../services/soundEffects';
@@ -20,6 +24,8 @@ interface ScheduleViewProps {
   slots: ScheduleSlot[];
   currentPeriodInfo: CurrentPeriodInfo;
   onUpdateSlot: (slot: ScheduleSlot) => void;
+  onUpdatePeriod?: (period: SchedulePeriod) => void;
+  onResetPeriods?: () => void;
   isSoundEnabled: boolean;
   onToggleSound: () => void;
 }
@@ -37,10 +43,25 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   slots,
   currentPeriodInfo,
   onUpdateSlot,
+  onUpdatePeriod,
+  onResetPeriods,
   isSoundEnabled,
   onToggleSound,
 }) => {
   const [editingSlot, setEditingSlot] = useState<ScheduleSlot | null>(null);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [editingPeriod, setEditingPeriod] = useState<SchedulePeriod | null>(null);
+
+  // Helper to calculate period duration in minutes
+  const getPeriodDuration = (p: SchedulePeriod): number => {
+    try {
+      const [sh, sm] = p.startTime.split(':').map(Number);
+      const [eh, em] = p.endTime.split(':').map(Number);
+      return eh * 60 + em - (sh * 60 + sm);
+    } catch {
+      return 40;
+    }
+  };
 
   // Helper to find slot
   const getSlot = (dayOfWeek: string, periodNumber: number): ScheduleSlot | undefined => {
@@ -54,6 +75,13 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
     setEditingSlot(null);
   };
 
+  const handleSavePeriod = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPeriod || !onUpdatePeriod) return;
+    onUpdatePeriod(editingPeriod);
+    setEditingPeriod(null);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Banner with Live Bell & Current Status */}
@@ -61,19 +89,30 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-md bg-amber-600/20 text-amber-400 font-bold text-xs uppercase tracking-wider border border-amber-500/30">
-              Jornada Escolar Regular • 9 Períodos
+              Jornada Escolar • 7:00 AM a 12:00 PM ({periods.length} Períodos)
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1 flex items-center gap-2">
             Horario de Clases & Timbre en Tiempo Real
           </h2>
-          <p className="text-xs text-slate-400">
-            Seguimiento de períodos lectivos (7:00 AM – 1:40 PM), avisos sonoros de cambio de hora y recesos.
+          <p className="text-xs text-slate-400 mt-0.5">
+            Horario lectivo de 7:00 AM a 12:00 PM (1° de 45 min, 5° recreo de 15 min, y demás de 40 min). Alarma acústica y pre-aviso de 5 min automáticos.
           </p>
         </div>
 
         {/* Live Audio Bell Controls */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Configure Periods Modal button */}
+          <button
+            type="button"
+            onClick={() => setIsConfigModalOpen(true)}
+            title="Ver o ajustar configuración de horas de los períodos"
+            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+          >
+            <Settings className="w-4 h-4 text-blue-400" />
+            <span>Ver Períodos</span>
+          </button>
+
           {/* Toggle Audio Bell */}
           <button
             type="button"
@@ -85,7 +124,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
             }`}
           >
             {isSoundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-            <span>{isSoundEnabled ? 'Timbre Automático Activado' : 'Timbre Silenciado'}</span>
+            <span>{isSoundEnabled ? 'Timbre Activado' : 'Silenciado'}</span>
           </button>
 
           {/* Test Sound Bell Now */}
@@ -126,18 +165,19 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
             {currentPeriodInfo.isSchoolHours && currentPeriodInfo.period ? (
               <div className="text-base font-bold text-white mt-0.5">
                 {currentPeriodInfo.period.isRecess ? (
-                  <span className="text-emerald-300">
-                    {currentPeriodInfo.period.name} ({currentPeriodInfo.period.startTime} – {currentPeriodInfo.period.endTime})
+                  <span className="text-emerald-300 flex items-center gap-1.5">
+                    <Coffee className="w-4 h-4 inline" />
+                    {currentPeriodInfo.period.name} ({currentPeriodInfo.period.startTime} – {currentPeriodInfo.period.endTime} • 15 min)
                   </span>
                 ) : (
                   <span>
-                    Período {currentPeriodInfo.period.periodNumber}: {currentPeriodInfo.period.name} ({currentPeriodInfo.period.startTime} – {currentPeriodInfo.period.endTime})
+                    Período {currentPeriodInfo.period.periodNumber}: {currentPeriodInfo.period.name} ({currentPeriodInfo.period.startTime} – {currentPeriodInfo.period.endTime} • {getPeriodDuration(currentPeriodInfo.period)} min)
                   </span>
                 )}
               </div>
             ) : (
               <div className="text-sm font-semibold text-slate-300 mt-0.5">
-                Fuera del horario lectivo regular (La jornada es de 7:00 AM a 1:40 PM).
+                Fuera del horario lectivo escolar (Jornada oficial: 7:00 AM a 12:00 PM).
               </div>
             )}
           </div>
@@ -158,14 +198,14 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
         <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
           <div>
             <h3 className="font-bold text-white text-base">
-              Malla Horaria Semanal – 9 Períodos
+              Malla Horaria Semanal – 7:00 AM a 12:00 PM
             </h3>
             <p className="text-xs text-slate-400">
-              Haz clic en cualquier celda para editar la materia, grupo y aula asignada.
+              1° Período: 45 min • 5° Período: Recreo (15 min) • Demás Períodos: 40 min. Haz clic en cualquier celda para editar grupo o materia.
             </p>
           </div>
-          <div className="text-xs text-slate-400 font-mono">
-            7:00 AM – 1:40 PM
+          <div className="text-xs text-amber-400 font-mono font-bold bg-amber-950/40 border border-amber-800/40 px-3 py-1 rounded-lg">
+            7:00 AM – 12:00 PM
           </div>
         </div>
 
@@ -173,8 +213,8 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
           <table className="w-full text-left border-collapse text-xs">
             <thead className="bg-slate-950 text-slate-300 font-bold border-b border-slate-800">
               <tr>
-                <th className="p-3 text-center min-w-[130px] border-r border-slate-800">
-                  Período / Hora
+                <th className="p-3 text-center min-w-[150px] border-r border-slate-800">
+                  Período / Horario
                 </th>
                 {DAYS_OF_WEEK.map((d) => (
                   <th key={d.key} className="p-3 text-center min-w-[150px] border-r border-slate-800 last:border-r-0">
@@ -188,24 +228,34 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
               {periods.map((period) => {
                 const isCurrent =
                   currentPeriodInfo.period?.periodNumber === period.periodNumber;
+                const duration = getPeriodDuration(period);
 
                 if (period.isRecess) {
                   return (
                     <tr
                       key={`recess-${period.periodNumber}`}
-                      className="bg-emerald-950/20 hover:bg-emerald-950/30 transition-colors"
+                      className="bg-emerald-950/30 hover:bg-emerald-950/40 transition-colors"
                     >
                       <td className="p-2.5 text-center font-bold text-emerald-400 border-r border-slate-800 font-mono">
-                        <div className="text-xs">{period.name}</div>
-                        <div className="text-[10px] text-slate-400 font-normal">
-                          {period.startTime} - {period.endTime}
+                        <div className="text-xs flex items-center justify-center gap-1">
+                          <Coffee className="w-3.5 h-3.5" />
+                          <span>{period.name}</span>
                         </div>
+                        <div className="text-[10px] text-slate-300 font-normal">
+                          {period.startTime} – {period.endTime}
+                        </div>
+                        <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-emerald-700/60 text-[9px] font-bold text-white uppercase">
+                          {duration} min
+                        </span>
                       </td>
                       <td
                         colSpan={5}
-                        className="p-2.5 text-center font-extrabold text-xs uppercase tracking-widest text-emerald-300/80 bg-emerald-950/30"
+                        className="p-3 text-center font-extrabold text-xs uppercase tracking-wider text-emerald-300 bg-emerald-950/40 border-l border-r border-emerald-800/30"
                       >
-                        🔔 RECESO GENERAL Y DESCANSO ESCOLAR
+                        <div className="flex items-center justify-center gap-2">
+                          <Coffee className="w-4 h-4 text-emerald-400 animate-bounce" />
+                          <span>5° PERÍODO: RECREO ESCOLAR GENERAL (15 MINUTOS • 09:45 A 10:00 AM)</span>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -224,13 +274,18 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                         {period.name}
                       </div>
                       <div className="text-[10px] text-slate-400 font-mono">
-                        {period.startTime} - {period.endTime}
+                        {period.startTime} – {period.endTime}
                       </div>
-                      {isCurrent && (
-                        <span className="inline-block mt-1 px-1.5 py-0.2 rounded bg-blue-500 text-[9px] font-black text-white uppercase">
-                          En curso
+                      <div className="mt-1 flex items-center justify-center gap-1">
+                        <span className="px-1.5 py-0.2 rounded bg-slate-800 text-[9px] font-semibold text-slate-300 border border-slate-700">
+                          {duration} min
                         </span>
-                      )}
+                        {isCurrent && (
+                          <span className="px-1.5 py-0.2 rounded bg-blue-500 text-[9px] font-black text-white uppercase">
+                            En curso
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Day columns */}
@@ -366,6 +421,214 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Periods Configuration & Breakdown Modal */}
+      {isConfigModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="font-bold text-white text-base flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-400" />
+                  Estructura de la Jornada Escolar (7:00 AM – 12:00 PM)
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  1° Período (45 min) • 5° Período Recreo (15 min) • Demás períodos (40 min).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsConfigModalOpen(false)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto space-y-2 flex-1 pr-1">
+              {periods.map((p) => {
+                const dur = getPeriodDuration(p);
+                return (
+                  <div
+                    key={p.periodNumber}
+                    className={`p-3 rounded-xl border flex items-center justify-between transition-colors ${
+                      p.isRecess
+                        ? 'bg-emerald-950/40 border-emerald-600/40 text-emerald-200'
+                        : 'bg-slate-800/60 border-slate-700/60 text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${
+                          p.isRecess
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-slate-700 text-slate-200'
+                        }`}
+                      >
+                        {p.periodNumber}°
+                      </div>
+                      <div>
+                        <div className="font-bold text-xs flex items-center gap-2">
+                          <span>{p.name}</span>
+                          {p.isRecess && (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold">
+                              Recreo Oficial
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400 font-mono">
+                          {p.startTime} – {p.endTime}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-amber-300 font-mono text-xs font-bold">
+                        {dur} min
+                      </span>
+                      {onUpdatePeriod && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingPeriod(p)}
+                          className="p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
+                          title="Editar horas del período"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+              {onResetPeriods && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('¿Deseas restablecer los períodos a la jornada oficial de 7:00 AM a 12:00 PM?')) {
+                      onResetPeriods();
+                    }
+                  }}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-slate-700"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Restablecer a Oficial</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsConfigModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Single Period Modal */}
+      {editingPeriod && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h3 className="font-bold text-white text-sm">
+                Editar Período {editingPeriod.periodNumber}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setEditingPeriod(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePeriod} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Nombre del Período:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingPeriod.name}
+                  onChange={(e) =>
+                    setEditingPeriod({ ...editingPeriod, name: e.target.value })
+                  }
+                  className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    Hora Inicio:
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={editingPeriod.startTime}
+                    onChange={(e) =>
+                      setEditingPeriod({ ...editingPeriod, startTime: e.target.value })
+                    }
+                    className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    Hora Fin:
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={editingPeriod.endTime}
+                    onChange={(e) =>
+                      setEditingPeriod({ ...editingPeriod, endTime: e.target.value })
+                    }
+                    className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="isRecessCheck"
+                  checked={!!editingPeriod.isRecess}
+                  onChange={(e) =>
+                    setEditingPeriod({ ...editingPeriod, isRecess: e.target.checked })
+                  }
+                  className="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-emerald-500 w-4 h-4"
+                />
+                <label htmlFor="isRecessCheck" className="text-xs text-slate-300 font-medium">
+                  Es bloque de Recreo / Receso
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingPeriod(null)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"
+                >
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

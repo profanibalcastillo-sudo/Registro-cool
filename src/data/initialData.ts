@@ -826,39 +826,21 @@ export const INITIAL_CALENDAR_CONFIG: AcademicCalendarConfig = {
 };
 
 export const INITIAL_SCHEDULE_PERIODS: SchedulePeriod[] = [
-  { periodNumber: 1, name: '1° Período', label: '1° Período', startTime: '07:00', endTime: '07:45' },
-  { periodNumber: 2, name: '2° Período', label: '2° Período', startTime: '07:45', endTime: '08:30' },
+  { periodNumber: 1, name: '1° Período', label: '1° Período (45 min)', startTime: '07:00', endTime: '07:45' },
+  { periodNumber: 2, name: '2° Período', label: '2° Período (40 min)', startTime: '07:45', endTime: '08:25' },
+  { periodNumber: 3, name: '3° Período', label: '3° Período (40 min)', startTime: '08:25', endTime: '09:05' },
+  { periodNumber: 4, name: '4° Período', label: '4° Período (40 min)', startTime: '09:05', endTime: '09:45' },
   {
-    periodNumber: 3,
-    name: '3° Período',
-    label: '3° Período',
-    startTime: '08:30',
-    endTime: '09:15',
-    afterBreak: {
-      label: 'Receso 1 (Merienda)',
-      durationMinutes: 20,
-      startTime: '09:15',
-      endTime: '09:35',
-    },
+    periodNumber: 5,
+    name: '5° Período (Recreo)',
+    label: '5° Período (Recreo 15 min)',
+    startTime: '09:45',
+    endTime: '10:00',
+    isRecess: true,
   },
-  { periodNumber: 4, name: '4° Período', label: '4° Período', startTime: '09:35', endTime: '10:15' },
-  { periodNumber: 5, name: '5° Período', label: '5° Período', startTime: '10:15', endTime: '10:55' },
-  {
-    periodNumber: 6,
-    name: '6° Período',
-    label: '6° Período',
-    startTime: '10:55',
-    endTime: '11:35',
-    afterBreak: {
-      label: 'Receso 2 (Almuerzo)',
-      durationMinutes: 30,
-      startTime: '11:35',
-      endTime: '12:05',
-    },
-  },
-  { periodNumber: 7, name: '7° Período', label: '7° Período', startTime: '12:05', endTime: '12:45' },
-  { periodNumber: 8, name: '8° Período', label: '8° Período', startTime: '12:45', endTime: '13:25' },
-  { periodNumber: 9, name: '9° Período', label: '9° Período', startTime: '13:25', endTime: '14:05' },
+  { periodNumber: 6, name: '6° Período', label: '6° Período (40 min)', startTime: '10:00', endTime: '10:40' },
+  { periodNumber: 7, name: '7° Período', label: '7° Período (40 min)', startTime: '10:40', endTime: '11:20' },
+  { periodNumber: 8, name: '8° Período', label: '8° Período (40 min)', startTime: '11:20', endTime: '12:00' },
 ];
 
 export const INITIAL_SCHEDULE_SLOTS: ScheduleSlot[] = [
@@ -866,21 +848,19 @@ export const INITIAL_SCHEDULE_SLOTS: ScheduleSlot[] = [
   { id: 'slot-mon-2', dayOfWeek: 'monday', day: 'Lunes', periodNumber: 2, groupId: 'grp-7a', groupName: '7° Grado A', subject: 'Inglés (Grammar)', classroom: 'Aula 12', room: 'Aula 12', color: 'blue' },
   { id: 'slot-mon-3', dayOfWeek: 'monday', day: 'Lunes', periodNumber: 3, groupId: 'grp-8b', groupName: '8° Grado B', subject: 'Inglés (Listening Lab)', classroom: 'Lab 1', room: 'Lab 1', color: 'emerald' },
   { id: 'slot-mon-4', dayOfWeek: 'monday', day: 'Lunes', periodNumber: 4, groupId: 'grp-8b', groupName: '8° Grado B', subject: 'Inglés (Oral Skills)', classroom: 'Aula 14', room: 'Aula 14', color: 'emerald' },
-  { id: 'slot-mon-5', dayOfWeek: 'monday', day: 'Lunes', periodNumber: 5, groupId: '', groupName: 'Hora Libre', subject: 'Planificación Pedagógica', classroom: 'Sala Docente', room: 'Sala Docente', color: 'slate' },
+  // Period 5 is 15-minute Recess (09:45 - 10:00)
   { id: 'slot-mon-6', dayOfWeek: 'monday', day: 'Lunes', periodNumber: 6, groupId: 'grp-9a', groupName: '9° Grado A', subject: 'Inglés (Conversation)', classroom: 'Aula 08', room: 'Aula 08', color: 'purple' },
   { id: 'slot-mon-7', dayOfWeek: 'monday', day: 'Lunes', periodNumber: 7, groupId: 'grp-9a', groupName: '9° Grado A', subject: 'Inglés (Writing Workshop)', classroom: 'Aula 08', room: 'Aula 08', color: 'purple' },
-  { id: 'slot-mon-8', dayOfWeek: 'monday', day: 'Lunes', periodNumber: 8, groupId: '', groupName: 'Atención', subject: 'Atención a Acudientes', classroom: 'Oficina', room: 'Oficina', color: 'amber' },
-  { id: 'slot-mon-9', dayOfWeek: 'monday', day: 'Lunes', periodNumber: 9, groupId: '', groupName: 'Coordinación', subject: 'Reunión Docente', classroom: 'Biblioteca', room: 'Biblioteca', color: 'indigo' },
+  { id: 'slot-mon-8', dayOfWeek: 'monday', day: 'Lunes', periodNumber: 8, groupId: '', groupName: 'Coordinación', subject: 'Reunión Docente / Planificación', classroom: 'Biblioteca', room: 'Biblioteca', color: 'indigo' },
 
   { id: 'slot-tue-1', dayOfWeek: 'tuesday', day: 'Martes', periodNumber: 1, groupId: 'grp-9a', groupName: '9° Grado A', subject: 'Inglés (Literature & Vocab)', classroom: 'Aula 08', room: 'Aula 08', color: 'purple' },
   { id: 'slot-tue-2', dayOfWeek: 'tuesday', day: 'Martes', periodNumber: 2, groupId: 'grp-9a', groupName: '9° Grado A', subject: 'Inglés (Projects)', classroom: 'Aula 08', room: 'Aula 08', color: 'purple' },
   { id: 'slot-tue-3', dayOfWeek: 'tuesday', day: 'Martes', periodNumber: 3, groupId: 'grp-7a', groupName: '7° Grado A', subject: 'Inglés (Phonetics & Songs)', classroom: 'Aula 12', room: 'Aula 12', color: 'blue' },
   { id: 'slot-tue-4', dayOfWeek: 'tuesday', day: 'Martes', periodNumber: 4, groupId: 'grp-7a', groupName: '7° Grado A', subject: 'Inglés (Vocabulary)', classroom: 'Aula 12', room: 'Aula 12', color: 'blue' },
-  { id: 'slot-tue-5', dayOfWeek: 'tuesday', day: 'Martes', periodNumber: 5, groupId: 'grp-8b', groupName: '8° Grado B', subject: 'Inglés (Dialogue Practice)', classroom: 'Aula 14', room: 'Aula 14', color: 'emerald' },
-  { id: 'slot-tue-6', dayOfWeek: 'tuesday', day: 'Martes', periodNumber: 6, groupId: 'grp-8b', groupName: '8° Grado B', subject: 'Inglés (Reading Skills)', classroom: 'Aula 14', room: 'Aula 14', color: 'emerald' },
-  { id: 'slot-tue-7', dayOfWeek: 'tuesday', day: 'Martes', periodNumber: 7, groupId: '', groupName: 'Docencia', subject: 'Revisión y Calificación', classroom: 'Sala Docente', room: 'Sala Docente', color: 'slate' },
-  { id: 'slot-tue-8', dayOfWeek: 'tuesday', day: 'Martes', periodNumber: 8, groupId: '', groupName: 'Comisión', subject: 'Comisión de Convivencia', classroom: 'Dirección', room: 'Dirección', color: 'amber' },
-  { id: 'slot-tue-9', dayOfWeek: 'tuesday', day: 'Martes', periodNumber: 9, groupId: '', groupName: 'Tutoría', subject: 'Tutoría de Refuerzo', classroom: 'Aula 12', room: 'Aula 12', color: 'rose' },
+  // Period 5 is 15-minute Recess (09:45 - 10:00)
+  { id: 'slot-tue-6', dayOfWeek: 'tuesday', day: 'Martes', periodNumber: 6, groupId: 'grp-8b', groupName: '8° Grado B', subject: 'Inglés (Dialogue Practice)', classroom: 'Aula 14', room: 'Aula 14', color: 'emerald' },
+  { id: 'slot-tue-7', dayOfWeek: 'tuesday', day: 'Martes', periodNumber: 7, groupId: 'grp-8b', groupName: '8° Grado B', subject: 'Inglés (Reading Skills)', classroom: 'Aula 14', room: 'Aula 14', color: 'emerald' },
+  { id: 'slot-tue-8', dayOfWeek: 'tuesday', day: 'Martes', periodNumber: 8, groupId: '', groupName: 'Tutoría', subject: 'Tutoría de Refuerzo', classroom: 'Aula 12', room: 'Aula 12', color: 'rose' },
 ];
 
 export const INITIAL_THEME_PLANNERS: ThemePlanner[] = [

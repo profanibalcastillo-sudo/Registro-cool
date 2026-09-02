@@ -138,8 +138,26 @@ export function useFirebaseSync() {
 
   const [schedulePeriods, setSchedulePeriods] = useState<SchedulePeriod[]>(() => {
     try {
-      const saved = localStorage.getItem('meduca_periods_v1');
-      return saved ? JSON.parse(saved) : INITIAL_SCHEDULE_PERIODS;
+      const savedV2 = localStorage.getItem('meduca_periods_v2');
+      if (savedV2) {
+        return JSON.parse(savedV2);
+      }
+      const savedV1 = localStorage.getItem('meduca_periods_v1');
+      if (savedV1) {
+        const parsed = JSON.parse(savedV1);
+        // Check if existing stored periods are the legacy 9-period config ending at 14:05/13:25
+        // or if period 5 is not recess. If so, upgrade to the official 7:00 AM - 12:00 PM schedule.
+        if (
+          Array.isArray(parsed) &&
+          (parsed.length !== 8 || !parsed.some((p: SchedulePeriod) => p.isRecess && p.periodNumber === 5))
+        ) {
+          localStorage.setItem('meduca_periods_v2', JSON.stringify(INITIAL_SCHEDULE_PERIODS));
+          localStorage.setItem('meduca_periods_v1', JSON.stringify(INITIAL_SCHEDULE_PERIODS));
+          return INITIAL_SCHEDULE_PERIODS;
+        }
+        return parsed;
+      }
+      return INITIAL_SCHEDULE_PERIODS;
     } catch {
       return INITIAL_SCHEDULE_PERIODS;
     }
@@ -147,8 +165,19 @@ export function useFirebaseSync() {
 
   const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlot[]>(() => {
     try {
-      const saved = localStorage.getItem('meduca_slots_v1');
-      return saved ? JSON.parse(saved) : INITIAL_SCHEDULE_SLOTS;
+      const savedV2 = localStorage.getItem('meduca_slots_v2');
+      if (savedV2) return JSON.parse(savedV2);
+
+      const savedV1 = localStorage.getItem('meduca_slots_v1');
+      if (savedV1) {
+        const parsed: ScheduleSlot[] = JSON.parse(savedV1);
+        // Clean slots that might conflict with period 5 (now recess)
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter((s) => s.periodNumber !== 5 && s.periodNumber <= 8);
+          return filtered.length > 0 ? filtered : INITIAL_SCHEDULE_SLOTS;
+        }
+      }
+      return INITIAL_SCHEDULE_SLOTS;
     } catch {
       return INITIAL_SCHEDULE_SLOTS;
     }
@@ -241,6 +270,7 @@ export function useFirebaseSync() {
 
   useEffect(() => {
     try {
+      localStorage.setItem('meduca_periods_v2', JSON.stringify(schedulePeriods));
       localStorage.setItem('meduca_periods_v1', JSON.stringify(schedulePeriods));
     } catch (e) {
       console.warn('Storage write notice (periods):', e);
@@ -249,6 +279,7 @@ export function useFirebaseSync() {
 
   useEffect(() => {
     try {
+      localStorage.setItem('meduca_slots_v2', JSON.stringify(scheduleSlots));
       localStorage.setItem('meduca_slots_v1', JSON.stringify(scheduleSlots));
     } catch (e) {
       console.warn('Storage write notice (slots):', e);
@@ -589,6 +620,22 @@ export function useFirebaseSync() {
       }
       return [...prev, slot];
     });
+  }, []);
+
+  const updateSchedulePeriod = useCallback((period: SchedulePeriod) => {
+    setSchedulePeriods((prev) =>
+      prev.map((p) => (p.periodNumber === period.periodNumber ? period : p))
+    );
+  }, []);
+
+  const saveSchedulePeriods = useCallback((periods: SchedulePeriod[]) => {
+    setSchedulePeriods(periods);
+  }, []);
+
+  const resetSchedulePeriods = useCallback(() => {
+    setSchedulePeriods(INITIAL_SCHEDULE_PERIODS);
+    localStorage.setItem('meduca_periods_v2', JSON.stringify(INITIAL_SCHEDULE_PERIODS));
+    localStorage.setItem('meduca_periods_v1', JSON.stringify(INITIAL_SCHEDULE_PERIODS));
   }, []);
 
   const saveCalendarConfig = useCallback((config: AcademicCalendarConfig) => {
@@ -1043,6 +1090,9 @@ export function useFirebaseSync() {
     saveThemePlanner,
     saveWeeklyPlanner,
     updateScheduleSlot,
+    updateSchedulePeriod,
+    saveSchedulePeriods,
+    resetSchedulePeriods,
     saveCalendarConfig,
     saveTeacherInfo,
     addStudent,
