@@ -195,7 +195,17 @@ export function useFirebaseSync() {
   const [teacherInfo, setTeacherInfo] = useState<TeacherProfile>(() => {
     try {
       const saved = localStorage.getItem('meduca_teacher_info_v1');
-      return saved ? JSON.parse(saved) : INITIAL_TEACHER_PROFILE;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const schoolVal = parsed.school || parsed.schoolName || INITIAL_TEACHER_PROFILE.school;
+        return {
+          ...INITIAL_TEACHER_PROFILE,
+          ...parsed,
+          school: schoolVal,
+          schoolName: schoolVal,
+        };
+      }
+      return INITIAL_TEACHER_PROFILE;
     } catch {
       return INITIAL_TEACHER_PROFILE;
     }
@@ -643,7 +653,13 @@ export function useFirebaseSync() {
   }, []);
 
   const saveTeacherInfo = useCallback((info: TeacherProfile) => {
-    setTeacherInfo(info);
+    const schoolClean = (info.school || info.schoolName || '').trim();
+    const normalized: TeacherProfile = {
+      ...info,
+      school: schoolClean,
+      schoolName: schoolClean,
+    };
+    setTeacherInfo(normalized);
   }, []);
 
   const addGroup = useCallback((newGroup: Group, sampleStudents?: Student[]) => {

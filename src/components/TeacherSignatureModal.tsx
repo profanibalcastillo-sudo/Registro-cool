@@ -7,14 +7,17 @@ interface TeacherSignatureModalProps {
   teacherInfo: {
     name: string;
     email: string;
-    school: string;
-    region: string;
+    school?: string;
+    schoolName?: string;
+    region?: string;
+    circuit?: string;
     signatureDataUrl?: string;
   };
   onSaveTeacherInfo: (info: {
     name: string;
     email: string;
     school: string;
+    schoolName: string;
     region: string;
     signatureDataUrl?: string;
   }) => void;
@@ -28,13 +31,32 @@ export const TeacherSignatureModal: React.FC<TeacherSignatureModalProps> = ({
   onSaveTeacherInfo,
   onOpenBackupModal,
 }) => {
-  const [info, setInfo] = useState(teacherInfo);
+  const getInitialSchool = () => teacherInfo.school || teacherInfo.schoolName || '';
+
+  const [info, setInfo] = useState({
+    name: teacherInfo.name || '',
+    email: teacherInfo.email || '',
+    school: getInitialSchool(),
+    schoolName: getInitialSchool(),
+    region: teacherInfo.region || '',
+    signatureDataUrl: teacherInfo.signatureDataUrl || '',
+  });
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
   useEffect(() => {
-    setInfo(teacherInfo);
-  }, [teacherInfo]);
+    if (isOpen) {
+      const currentSchool = teacherInfo.school || teacherInfo.schoolName || '';
+      setInfo({
+        name: teacherInfo.name || '',
+        email: teacherInfo.email || '',
+        school: currentSchool,
+        schoolName: currentSchool,
+        region: teacherInfo.region || '',
+        signatureDataUrl: teacherInfo.signatureDataUrl || '',
+      });
+    }
+  }, [teacherInfo, isOpen]);
 
   useEffect(() => {
     if (isOpen && canvasRef.current && teacherInfo.signatureDataUrl) {
@@ -105,8 +127,11 @@ export const TeacherSignatureModal: React.FC<TeacherSignatureModalProps> = ({
     if (canvasRef.current) {
       sigUrl = canvasRef.current.toDataURL('image/png');
     }
+    const cleanSchool = (info.school || info.schoolName || '').trim();
     onSaveTeacherInfo({
       ...info,
+      school: cleanSchool,
+      schoolName: cleanSchool,
       signatureDataUrl: sigUrl,
     });
     onClose();
@@ -122,10 +147,10 @@ export const TeacherSignatureModal: React.FC<TeacherSignatureModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-white text-base">
-                Datos del Docente & Firma Digital
+                Datos del Docente & Centro Educativo
               </h3>
               <p className="text-xs text-slate-400">
-                Información para encabezados y actas oficiales de notas
+                Información para encabezados, barra superior y actas oficiales MEDUCA
               </p>
             </div>
           </div>
@@ -173,13 +198,22 @@ export const TeacherSignatureModal: React.FC<TeacherSignatureModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1">Centro Educativo (Colegio):</label>
+            <label className="block text-xs font-bold text-slate-300 mb-1">
+              Centro Educativo (Escuela / Colegio / Instituto):
+            </label>
             <input
               type="text"
+              required
+              placeholder="ej. C.E.B.G. Alto Boquete"
               value={info.school}
-              onChange={(e) => setInfo({ ...info, school: e.target.value })}
+              onChange={(e) =>
+                setInfo({ ...info, school: e.target.value, schoolName: e.target.value })
+              }
               className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
+            <p className="text-[10px] text-slate-400 mt-1">
+              Este nombre se mostrará en la barra superior, actas oficiales, planes didácticos y reportes.
+            </p>
           </div>
 
           {/* Signature Canvas */}

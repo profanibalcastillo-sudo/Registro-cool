@@ -19,7 +19,7 @@ import {
   HardDrive,
   WifiOff,
 } from 'lucide-react';
-import { Group, CurrentPeriodInfo } from '../types';
+import { Group, CurrentPeriodInfo, TeacherProfile } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
 
 interface NavbarProps {
@@ -31,6 +31,7 @@ interface NavbarProps {
   selectedTrimester: number;
   onTrimesterChange: (trimester: number) => void;
   user: any;
+  teacherInfo?: TeacherProfile;
   onLogout: () => void;
   syncStatus: 'synced' | 'syncing' | 'error' | 'offline';
   onOpenCalendarModal: () => void;
@@ -53,6 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   selectedTrimester,
   onTrimesterChange,
   user,
+  teacherInfo,
   onLogout,
   syncStatus,
   onOpenCalendarModal,
@@ -82,14 +84,26 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="px-4 py-2 bg-slate-950/80 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
         {/* Left: MEDUCA Badge & Active Period Indicator */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 font-bold text-slate-200">
-            <div className="w-6 h-6 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+          <button
+            type="button"
+            onClick={onOpenSignatureModal}
+            title="Haz clic para configurar el Centro Educativo y tus datos docentes"
+            className="flex items-center gap-2 font-bold text-slate-200 hover:text-white transition-colors cursor-pointer group text-left"
+          >
+            <div className="w-6 h-6 rounded-lg bg-blue-600 flex items-center justify-center text-white group-hover:bg-blue-500 transition-colors shrink-0">
               <GraduationCap className="w-3.5 h-3.5" />
             </div>
-            <span>MEDUCA Panamá</span>
+            <span className="shrink-0">MEDUCA</span>
             <span className="text-slate-500">|</span>
-            <span className="text-slate-300 font-normal">Colegio Secundario • Chiriquí</span>
-          </div>
+            <span className="text-slate-300 font-normal group-hover:text-blue-300 group-hover:underline underline-offset-2 flex items-center gap-1.5 truncate max-w-[200px] sm:max-w-xs md:max-w-sm">
+              <span className="truncate">{teacherInfo?.schoolName || teacherInfo?.school || 'Centro Educativo'}</span>
+              {teacherInfo?.region && (
+                <span className="text-slate-400 text-[11px] hidden sm:inline shrink-0">
+                  • {teacherInfo.region.replace(/^Regional de Educación de /i, '').replace(/^Regional de /i, '')}
+                </span>
+              )}
+            </span>
+          </button>
 
           {/* Current Period Badge */}
           {currentPeriodInfo.isSchoolHours && currentPeriodInfo.period ? (
@@ -322,7 +336,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
-            <span>Horario (9 Períodos)</span>
+            <span>Horario (7:00-12:00)</span>
           </button>
 
           {/* 4. MEDUCA Theme Planner */}

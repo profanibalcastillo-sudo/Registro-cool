@@ -160,6 +160,7 @@ export function App() {
         selectedTrimester={selectedTrimester}
         onTrimesterChange={setSelectedTrimester}
         user={user}
+        teacherInfo={teacherInfo}
         onLogout={logout}
         syncStatus={syncStatus}
         onOpenCalendarModal={() => setIsCalendarModalOpen(true)}

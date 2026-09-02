@@ -299,7 +299,7 @@ export function exportThemePlannerToHTML(
   group: Group,
   planner: ThemePlanner
 ) {
-  const schoolName = (teacher as any).schoolName || (teacher as any).school || 'Colegio Secundario';
+  const schoolName = (teacher as any).schoolName || (teacher as any).school || 'Centro Educativo';
   const regionName = (teacher as any).region || 'Chiriquí';
   const teacherName = teacher.name || 'Prof. Aníbal Castillo';
 
@@ -461,7 +461,7 @@ export function exportLessonPlanToHTML(
   planner: ThemePlanner,
   lesson: SkillLessonPlan
 ) {
-  const schoolName = (teacher as any).schoolName || (teacher as any).school || 'Colegio Secundario';
+  const schoolName = (teacher as any).schoolName || (teacher as any).school || 'Centro Educativo';
   const regionName = (teacher as any).region || 'Chiriquí';
   const teacherName = teacher.name || 'Prof. Aníbal Castillo';
 
@@ -585,7 +585,7 @@ export function exportWeeklyPlannerToHTML(
   group: Group,
   planner: WeeklyPlanner
 ) {
-  const schoolName = (teacher as any).schoolName || (teacher as any).school || 'Colegio Secundario';
+  const schoolName = (teacher as any).schoolName || (teacher as any).school || 'Centro Educativo';
   const regionName = (teacher as any).region || 'Chiriquí';
   const teacherName = teacher.name || 'Prof. Aníbal Castillo';
 
