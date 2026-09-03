@@ -39,6 +39,7 @@ export const db = firebaseConfig.firestoreDatabaseId
   : getFirestore(app);
 
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope('https://www.googleapis.com/auth/drive.file');
 googleProvider.setCustomParameters({
   prompt: 'select_account',
 });
@@ -54,10 +55,45 @@ async function testConnection() {
 }
 testConnection();
 
+// Token cache for Google Workspace (Drive) with sessionStorage persistence
+let cachedDriveAccessToken: string | null = (typeof window !== 'undefined' ? sessionStorage.getItem('meduca_drive_token') : null);
+
+export function setCachedDriveToken(token: string | null) {
+  cachedDriveAccessToken = token;
+  if (typeof window !== 'undefined') {
+    if (token) {
+      sessionStorage.setItem('meduca_drive_token', token);
+    } else {
+      sessionStorage.removeItem('meduca_drive_token');
+    }
+  }
+}
+
+export function getCachedDriveToken(): string | null {
+  if (!cachedDriveAccessToken && typeof window !== 'undefined') {
+    cachedDriveAccessToken = sessionStorage.getItem('meduca_drive_token');
+  }
+  return cachedDriveAccessToken;
+}
+
 // Authentication helpers
-export async function loginWithGoogle(): Promise<User> {
+export async function loginWithGoogle(): Promise<{ user: User; accessToken?: string }> {
   const result = await signInWithPopup(auth, googleProvider);
-  return result.user;
+  const credential = GoogleAuthProvider.credentialFromResult(result);
+  if (credential?.accessToken) {
+    cachedDriveAccessToken = credential.accessToken;
+  }
+  return { user: result.user, accessToken: credential?.accessToken };
+}
+
+export async function loginWithGoogleForDrive(): Promise<string> {
+  const result = await signInWithPopup(auth, googleProvider);
+  const credential = GoogleAuthProvider.credentialFromResult(result);
+  if (!credential?.accessToken) {
+    throw new Error('No se obtuvo el token de acceso de Google Drive.');
+  }
+  cachedDriveAccessToken = credential.accessToken;
+  return credential.accessToken;
 }
 
 export async function loginWithGoogleRedirect(): Promise<void> {
@@ -75,6 +111,7 @@ export async function checkRedirectResult(): Promise<User | null> {
 }
 
 export async function logoutUser(): Promise<void> {
+  setCachedDriveToken(null);
   await signOut(auth);
 }
 

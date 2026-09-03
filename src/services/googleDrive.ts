@@ -1,4 +1,5 @@
 // Google Drive API Client Service for MEDUCA Digital Registry
+import { getCachedDriveToken, setCachedDriveToken, loginWithGoogleForDrive } from './firebase';
 
 export interface GoogleDriveFile {
   id: string;
@@ -9,18 +10,29 @@ export interface GoogleDriveFile {
   createdTime?: string;
 }
 
-let cachedAccessToken: string | null = null;
 let tokenClient: any = null;
 
-// Initialize Google Identity Services Token Client
-export function getGoogleDriveToken(): Promise<string> {
-  return new Promise((resolve, reject) => {
-    // If we have an existing valid cached token in memory or window
-    if (cachedAccessToken) {
-      resolve(cachedAccessToken);
-      return;
-    }
+// Initialize Google Identity Services or Firebase Auth Token Client
+export async function getGoogleDriveToken(): Promise<string> {
+  // 1. If already cached in memory
+  const existingCached = getCachedDriveToken();
+  if (existingCached) {
+    return existingCached;
+  }
 
+  // 2. Try acquiring via Firebase Auth Google provider popup (official AI Studio workspace pattern)
+  try {
+    const token = await loginWithGoogleForDrive();
+    if (token) {
+      setCachedDriveToken(token);
+      return token;
+    }
+  } catch (firebaseErr: any) {
+    console.info('Firebase auth drive popup notice:', firebaseErr?.message);
+  }
+
+  // 3. Fallback to Google Identity Services client if initialized in browser
+  return new Promise((resolve, reject) => {
     if (typeof window === 'undefined') {
       reject(new Error('Google Drive integration requires a browser environment.'));
       return;
@@ -30,7 +42,7 @@ export function getGoogleDriveToken(): Promise<string> {
     if (!google?.accounts?.oauth2) {
       reject(
         new Error(
-          'La biblioteca de Google Identity Services aún no está lista. Por favor intente de nuevo en un momento.'
+          'La biblioteca de Google Identity Services aún no está lista. Por favor recargue la página e intente de nuevo.'
         )
       );
       return;
@@ -38,14 +50,14 @@ export function getGoogleDriveToken(): Promise<string> {
 
     try {
       tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: '275152670174-aistudio-client-id.apps.googleusercontent.com', // Dynamically handled by AI Studio OAuth proxy
-        scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata',
+        client_id: '275152670174-aistudio-client-id.apps.googleusercontent.com',
+        scope: 'https://www.googleapis.com/auth/drive.file',
         callback: (tokenResponse: any) => {
           if (tokenResponse.error) {
             reject(new Error(tokenResponse.error_description || tokenResponse.error));
             return;
           }
-          cachedAccessToken = tokenResponse.access_token;
+          setCachedDriveToken(tokenResponse.access_token);
           resolve(tokenResponse.access_token);
         },
       });
@@ -120,22 +132,28 @@ export async function uploadBackupToDrive(
     description: `Copia de seguridad del Registro Digital Docente MEDUCA generada el ${now.toLocaleString()}`,
   };
 
-  const form = new FormData();
-  form.append(
-    'metadata',
-    new Blob([JSON.stringify(metadata)], { type: 'application/json' })
-  );
-  form.append(
-    'file',
-    new Blob([fileContent], { type: 'application/json' })
-  );
+  const boundary = '-------meduca_boundary_' + Date.now();
+  const delimiter = `\r\n--${boundary}\r\n`;
+  const closeDelimiter = `\r\n--${boundary}--`;
+
+  const multipartRequestBody =
+    delimiter +
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+    JSON.stringify(metadata) +
+    delimiter +
+    'Content-Type: application/json\r\n\r\n' +
+    fileContent +
+    closeDelimiter;
 
   const uploadRes = await fetch(
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,modifiedTime,size',
     {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+      },
+      body: multipartRequestBody,
     }
   );
 

@@ -44,6 +44,20 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Helper to reliably parse JSON from Gemini text responses
+function cleanJsonText(raw: string): string {
+  let cleaned = (raw || '').trim();
+  if (cleaned.startsWith('```json')) {
+    cleaned = cleaned.slice(7);
+  } else if (cleaned.startsWith('```')) {
+    cleaned = cleaned.slice(3);
+  }
+  if (cleaned.endsWith('```')) {
+    cleaned = cleaned.slice(0, -3);
+  }
+  return cleaned.trim();
+}
+
 // AI Endpoint: Generador de Planeamiento Didáctico Oficial MEDUCA
 app.post('/api/gemini/generate-plan', async (req, res) => {
   try {
@@ -114,7 +128,7 @@ ${customInstructions ? `- Instrucciones pedagógicas adicionales del docente: ${
 Asegúrate de que los objetivos e indicadores estén redactados con verbos en infinitivo y tercera persona acordes con la taxonomía pedagógica y la normativa panameña de MEDUCA. Devuelve únicamente el JSON.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
+      model: 'gemini-3.8-flash',
       contents: prompt,
       config: {
         systemInstruction: systemPrompt,
@@ -123,7 +137,7 @@ Asegúrate de que los objetivos e indicadores estén redactados con verbos en in
     });
 
     const text = response.text || '{}';
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(cleanJsonText(text));
     res.json({ success: true, plan: parsed });
   } catch (error: any) {
     console.error('Error in /api/gemini/generate-plan:', error);
@@ -181,7 +195,7 @@ ${criteriaDescription ? `- Detalles específicos: ${criteriaDescription}` : ''}
 Asegura que los descriptores sean claros, objetivos y fáciles de aplicar durante la corrección.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
+      model: 'gemini-3.8-flash',
       contents: prompt,
       config: {
         systemInstruction: systemPrompt,
@@ -190,7 +204,7 @@ Asegura que los descriptores sean claros, objetivos y fáciles de aplicar durant
     });
 
     const text = response.text || '{}';
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(cleanJsonText(text));
     res.json({ success: true, rubric: parsed });
   } catch (error: any) {
     console.error('Error in /api/gemini/generate-rubric:', error);
@@ -245,7 +259,7 @@ ${challenges ? `- Áreas a reforzar: ${challenges}` : ''}
 Formula sugerencias pedagógicas claras tanto para el alumno como para el acudiente.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
+      model: 'gemini-3.8-flash',
       contents: prompt,
       config: {
         systemInstruction: systemPrompt,
@@ -254,7 +268,7 @@ Formula sugerencias pedagógicas claras tanto para el alumno como para el acudie
     });
 
     const text = response.text || '{}';
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(cleanJsonText(text));
     res.json({ success: true, feedback: parsed });
   } catch (error: any) {
     console.error('Error in /api/gemini/generate-feedback:', error);
@@ -308,7 +322,7 @@ Responde de forma concisa, clara, estructurada con viñetas o tablas cuando sea 
     });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
+      model: 'gemini-3.8-flash',
       contents,
       config: {
         systemInstruction: systemPrompt,

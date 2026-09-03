@@ -34,6 +34,7 @@ import {
   deleteDriveFile,
   GoogleDriveFile,
 } from '../services/googleDrive';
+import { getCachedDriveToken } from '../services/firebase';
 import {
   Group,
   Student,
@@ -122,12 +123,25 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   // Google Drive Integration State
+  const initialCachedToken = getCachedDriveToken();
   const [isDriveConnecting, setIsDriveConnecting] = useState(false);
   const [isDriveUploading, setIsDriveUploading] = useState(false);
   const [isDriveLoadingFiles, setIsDriveLoadingFiles] = useState(false);
   const [driveFiles, setDriveFiles] = useState<GoogleDriveFile[]>([]);
-  const [driveConnected, setDriveConnected] = useState(false);
-  const [driveToken, setDriveToken] = useState<string | null>(null);
+  const [driveConnected, setDriveConnected] = useState<boolean>(Boolean(initialCachedToken));
+  const [driveToken, setDriveToken] = useState<string | null>(initialCachedToken);
+
+  // Auto-load drive files if connected and tab is active
+  useEffect(() => {
+    const cached = getCachedDriveToken();
+    if (cached) {
+      setDriveToken(cached);
+      setDriveConnected(true);
+      if (activeTab === 'drive' && isOpen) {
+        loadDriveFiles(cached);
+      }
+    }
+  }, [activeTab, isOpen]);
 
   // Import State
   const [fileToImport, setFileToImport] = useState<File | null>(null);

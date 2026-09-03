@@ -529,8 +529,9 @@ export function useFirebaseSync() {
       }
 
       // Standard popup auth
-      const fireUser = await loginWithGoogle();
-      if (fireUser) {
+      const res = await loginWithGoogle();
+      if (res && res.user) {
+        const fireUser = res.user;
         const u = {
           uid: fireUser.uid,
           email: fireUser.email || 'profanibalcastillo@gmail.com',
