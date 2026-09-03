@@ -78,22 +78,42 @@ export function getCachedDriveToken(): string | null {
 
 // Authentication helpers
 export async function loginWithGoogle(): Promise<{ user: User; accessToken?: string }> {
-  const result = await signInWithPopup(auth, googleProvider);
-  const credential = GoogleAuthProvider.credentialFromResult(result);
-  if (credential?.accessToken) {
-    cachedDriveAccessToken = credential.accessToken;
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    if (credential?.accessToken) {
+      cachedDriveAccessToken = credential.accessToken;
+    }
+    return { user: result.user, accessToken: credential?.accessToken };
+  } catch (error: any) {
+    if (error?.code === 'auth/unauthorized-domain' || error?.message?.includes('unauthorized-domain')) {
+      const hostname = typeof window !== 'undefined' ? window.location.hostname : 'tu dominio';
+      throw new Error(
+        `Dominio no autorizado en Firebase (${hostname}). Debes registrar este dominio en Firebase Console -> Authentication -> Settings -> Authorized domains.`
+      );
+    }
+    throw error;
   }
-  return { user: result.user, accessToken: credential?.accessToken };
 }
 
 export async function loginWithGoogleForDrive(): Promise<string> {
-  const result = await signInWithPopup(auth, googleProvider);
-  const credential = GoogleAuthProvider.credentialFromResult(result);
-  if (!credential?.accessToken) {
-    throw new Error('No se obtuvo el token de acceso de Google Drive.');
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    if (!credential?.accessToken) {
+      throw new Error('No se obtuvo el token de acceso de Google Drive.');
+    }
+    cachedDriveAccessToken = credential.accessToken;
+    return credential.accessToken;
+  } catch (error: any) {
+    if (error?.code === 'auth/unauthorized-domain' || error?.message?.includes('unauthorized-domain')) {
+      const hostname = typeof window !== 'undefined' ? window.location.hostname : 'tu dominio';
+      throw new Error(
+        `Dominio no autorizado en Firebase (${hostname}). Agrega "${hostname}" en Firebase Console -> Authentication -> Settings -> Authorized domains.`
+      );
+    }
+    throw error;
   }
-  cachedDriveAccessToken = credential.accessToken;
-  return credential.accessToken;
 }
 
 export async function loginWithGoogleRedirect(): Promise<void> {

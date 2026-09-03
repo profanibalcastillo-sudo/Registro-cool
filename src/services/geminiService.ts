@@ -63,6 +63,53 @@ export interface MeducaFeedbackResponse {
   pedagogicalAlert?: string | null;
 }
 
+async function safePostApi(endpoint: string, payload: any): Promise<any> {
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (netErr: any) {
+    throw new Error(
+      `No se pudo conectar con el servidor (${netErr.message || 'Error de red'}). Verifica tu conexión o el estado de Vercel.`
+    );
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const text = await response.text().catch(() => '');
+    if (response.status === 404) {
+      throw new Error(
+        'El endpoint de IA no fue encontrado (404 en Vercel). Asegúrate de desplegar con el archivo vercel.json y la función /api/index.ts incluidos en el proyecto.'
+      );
+    }
+    throw new Error(
+      `Respuesta no válida del servidor (${response.status}): ${text.slice(0, 120)}... Verifica la variable GEMINI_API_KEY en Vercel.`
+    );
+  }
+
+  let data: any;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error('La respuesta del servidor de IA no tiene formato JSON válido.');
+  }
+
+  if (!response.ok || !data.success) {
+    const err = data?.error || `Error ${response.status} en el servicio de IA Gemini.`;
+    if (err.includes('GEMINI_API_KEY')) {
+      throw new Error(
+        'Falta configurar la variable GEMINI_API_KEY en tu proyecto de Vercel. Ve a Settings -> Environment Variables y agrégala.'
+      );
+    }
+    throw new Error(err);
+  }
+
+  return data;
+}
+
 export async function generateDidacticPlan(params: {
   subject: string;
   grade: string;
@@ -73,17 +120,7 @@ export async function generateDidacticPlan(params: {
   competencies?: string[];
   customInstructions?: string;
 }): Promise<MeducaPlanResponse> {
-  const response = await fetch('/api/gemini/generate-plan', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  const data = await response.json();
-  if (!response.ok || !data.success) {
-    throw new Error(data.error || 'Error al comunicarse con el servicio de IA Gemini.');
-  }
-
+  const data = await safePostApi('/api/gemini/generate-plan', params);
   return data.plan;
 }
 
@@ -94,17 +131,7 @@ export async function generateRubric(params: {
   evaluationType: 'formative' | 'summative' | 'exam';
   criteriaDescription?: string;
 }): Promise<MeducaRubricResponse> {
-  const response = await fetch('/api/gemini/generate-rubric', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  const data = await response.json();
-  if (!response.ok || !data.success) {
-    throw new Error(data.error || 'Error al generar la rúbrica con IA.');
-  }
-
+  const data = await safePostApi('/api/gemini/generate-rubric', params);
   return data.rubric;
 }
 
@@ -121,17 +148,7 @@ export async function generateStudentFeedback(params: {
   strengths?: string;
   challenges?: string;
 }): Promise<MeducaFeedbackResponse> {
-  const response = await fetch('/api/gemini/generate-feedback', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  const data = await response.json();
-  if (!response.ok || !data.success) {
-    throw new Error(data.error || 'Error al generar observaciones con IA.');
-  }
-
+  const data = await safePostApi('/api/gemini/generate-feedback', params);
   return data.feedback;
 }
 
@@ -140,16 +157,6 @@ export async function sendChatMessage(
   history: Array<{ role: 'user' | 'model'; text: string }>,
   context: { subject?: string; groupName?: string; trimester?: number | string }
 ): Promise<string> {
-  const response = await fetch('/api/gemini/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, history, context }),
-  });
-
-  const data = await response.json();
-  if (!response.ok || !data.success) {
-    throw new Error(data.error || 'Error en el asistente de chat IA.');
-  }
-
+  const data = await safePostApi('/api/gemini/chat', { message, history, context });
   return data.reply;
 }
