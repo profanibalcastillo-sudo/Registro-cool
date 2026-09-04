@@ -1,5 +1,4 @@
 // Google Drive API Client Service for MEDUCA Digital Registry
-import { getCachedDriveToken, setCachedDriveToken, loginWithGoogleForDrive } from './firebase';
 
 export interface GoogleDriveFile {
   id: string;
@@ -10,9 +9,19 @@ export interface GoogleDriveFile {
   createdTime?: string;
 }
 
+let cachedDriveAccessToken: string | null = null;
+
+export function getCachedDriveToken(): string | null {
+  return cachedDriveAccessToken;
+}
+
+export function setCachedDriveToken(token: string | null) {
+  cachedDriveAccessToken = token;
+}
+
 let tokenClient: any = null;
 
-// Initialize Google Identity Services or Firebase Auth Token Client
+// Initialize Google Identity Services Client
 export async function getGoogleDriveToken(): Promise<string> {
   // 1. If already cached in memory
   const existingCached = getCachedDriveToken();
@@ -20,18 +29,7 @@ export async function getGoogleDriveToken(): Promise<string> {
     return existingCached;
   }
 
-  // 2. Try acquiring via Firebase Auth Google provider popup (official AI Studio workspace pattern)
-  try {
-    const token = await loginWithGoogleForDrive();
-    if (token) {
-      setCachedDriveToken(token);
-      return token;
-    }
-  } catch (firebaseErr: any) {
-    console.info('Firebase auth drive popup notice:', firebaseErr?.message);
-  }
-
-  // 3. Fallback to Google Identity Services client if initialized in browser
+  // 2. Acquire via Google Identity Services client in browser
   return new Promise((resolve, reject) => {
     if (typeof window === 'undefined') {
       reject(new Error('Google Drive integration requires a browser environment.'));
@@ -42,7 +40,7 @@ export async function getGoogleDriveToken(): Promise<string> {
     if (!google?.accounts?.oauth2) {
       reject(
         new Error(
-          'La biblioteca de Google Identity Services aún no está lista. Por favor recargue la página e intente de nuevo.'
+          'La biblioteca de Google Identity Services aún no está cargada. Puedes respaldar tu información de inmediato descargando el archivo JSON de copia de seguridad.'
         )
       );
       return;
@@ -50,7 +48,7 @@ export async function getGoogleDriveToken(): Promise<string> {
 
     try {
       tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: '275152670174-aistudio-client-id.apps.googleusercontent.com',
+        client_id: '275152670174-4cqif4ke5j0ejjcvotcjquh33flk0mtv.apps.googleusercontent.com',
         scope: 'https://www.googleapis.com/auth/drive.file',
         callback: (tokenResponse: any) => {
           if (tokenResponse.error) {

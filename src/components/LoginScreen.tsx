@@ -317,7 +317,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = f
               <div className="pt-3 border-t border-slate-800/80 space-y-1.5 text-[11px] text-slate-400">
                 <div className="flex items-center gap-2 text-slate-300">
                   <Cloud className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                  <span>Sincronización en la nube con Firebase Firestore</span>
+                  <span>Almacenamiento local ultrarrápido, offline y 100% privado</span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-300">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />

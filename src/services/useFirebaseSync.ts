@@ -1,18 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  auth,
-  db,
-  loginWithGoogle,
-  loginWithGoogleRedirect,
-  checkRedirectResult,
-  logoutUser,
-  onAuthStateChanged,
-  doc,
-  getDoc,
-  setDoc,
-  User,
-} from './firebase';
-import {
   Student,
   EvaluationColumn,
   Grade,
@@ -320,244 +307,43 @@ export function useFirebaseSync() {
     }
   }, [localSnapshots]);
 
-  // Auth observer and redirect result check
-  useEffect(() => {
-    // Check if user just returned from Google Redirect login (Safari / Mobile / iPad)
-    checkRedirectResult()
-      .then((fireUser) => {
-        if (fireUser) {
-          const u = {
-            uid: fireUser.uid,
-            email: fireUser.email || 'profanibalcastillo@gmail.com',
-            displayName: fireUser.displayName || 'Prof. Aníbal Castillo',
-            photoURL: fireUser.photoURL || INITIAL_TEACHER_PROFILE.avatarUrl,
-          };
-          setUser(u);
-          localStorage.setItem('meduca_logged_user_v1', JSON.stringify(u));
-        }
-      })
-      .catch((err) => {
-        console.warn('Redirect auth check notice:', err);
-      });
-
-    const unsubscribe = onAuthStateChanged(auth, async (fireUser) => {
-      if (fireUser) {
-        const u = {
-          uid: fireUser.uid,
-          email: fireUser.email,
-          displayName: fireUser.displayName || 'Prof. Aníbal Castillo',
-          photoURL: fireUser.photoURL || INITIAL_TEACHER_PROFILE.avatarUrl,
-        };
-        setUser(u);
-        localStorage.setItem('meduca_logged_user_v1', JSON.stringify(u));
-        
-        // Fetch cloud data if exists
-        try {
-          setSyncStatus('syncing');
-          const docRef = doc(db, 'teacher_records', fireUser.uid);
-          const snap = await getDoc(docRef);
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data.groups && Array.isArray(data.groups)) setGroups(data.groups);
-            if (data.students && Array.isArray(data.students)) setStudents(data.students);
-            if (data.evaluationColumns && Array.isArray(data.evaluationColumns)) setEvaluationColumns(data.evaluationColumns);
-            if (data.grades && typeof data.grades === 'object') setGrades(data.grades);
-            if (data.attendanceRecords && typeof data.attendanceRecords === 'object') setAttendanceRecords(data.attendanceRecords);
-            if (data.themePlanners && Array.isArray(data.themePlanners)) setThemePlanners(data.themePlanners);
-            if (data.weeklyPlanners && Array.isArray(data.weeklyPlanners)) setWeeklyPlanners(data.weeklyPlanners);
-            if (data.scheduleSlots && Array.isArray(data.scheduleSlots)) setScheduleSlots(data.scheduleSlots);
-            if (data.schedulePeriods && Array.isArray(data.schedulePeriods)) setSchedulePeriods(data.schedulePeriods);
-            if (data.calendarConfig && typeof data.calendarConfig === 'object') setCalendarConfig(data.calendarConfig);
-            if (data.teacherInfo && typeof data.teacherInfo === 'object') setTeacherInfo(data.teacherInfo);
-          }
-          setSyncStatus('synced');
-        } catch (e) {
-          console.warn('Firestore cloud fetch note:', e);
-          setSyncStatus('synced');
-        }
-      }
-    });
-
-    return () => unsubscribe();
+  // Local Storage Persistence & Status
+  const isSyncingRef = useRef(false);
+  const syncLocal = useCallback(async () => {
+    if (isSyncingRef.current) return;
+    try {
+      isSyncingRef.current = true;
+      setSyncStatus('syncing');
+      setTimeout(() => {
+        setSyncStatus('synced');
+        isSyncingRef.current = false;
+      }, 300);
+    } catch {
+      setSyncStatus('synced');
+      isSyncingRef.current = false;
+    }
   }, []);
 
-  // Sync to Cloud
-  const isCloudSyncing = useRef(false);
-  const syncToCloud = useCallback(async () => {
-    if (!user || isCloudSyncing.current) return;
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      setSyncStatus('offline');
-      return;
-    }
-    // Only attempt Firestore write if user has an active Firebase Auth session matching uid
-    if (!auth.currentUser || auth.currentUser.uid !== user.uid) {
-      setSyncStatus('synced');
-      return;
-    }
-    try {
-      isCloudSyncing.current = true;
-      setSyncStatus('syncing');
-      const docRef = doc(db, 'teacher_records', user.uid);
-      await setDoc(
-        docRef,
-        {
-          userId: user.uid,
-          userEmail: user.email,
-          updatedAt: new Date().toISOString(),
-          groups,
-          students,
-          evaluationColumns,
-          grades,
-          attendanceRecords,
-          themePlanners,
-          weeklyPlanners,
-          scheduleSlots,
-          schedulePeriods,
-          calendarConfig,
-          teacherInfo,
-        },
-        { merge: true }
-      );
-      setSyncStatus('synced');
-    } catch (e) {
-      console.warn('Firestore cloud sync note (offline/local fallback):', e);
-      setSyncStatus('offline');
-    } finally {
-      isCloudSyncing.current = false;
-    }
-  }, [
-    user,
-    groups,
-    students,
-    evaluationColumns,
-    grades,
-    attendanceRecords,
-    themePlanners,
-    weeklyPlanners,
-    scheduleSlots,
-    schedulePeriods,
-    calendarConfig,
-    teacherInfo,
-  ]);
-
-  // Online / Offline connectivity listener
-  useEffect(() => {
-    const handleOnline = () => {
-      setSyncStatus('syncing');
-      syncToCloud();
-    };
-    const handleOffline = () => {
-      setSyncStatus('offline');
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [syncToCloud]);
-
-  // Debounced cloud sync
-  useEffect(() => {
-    if (!user) return;
-    const timer = setTimeout(() => {
-      syncToCloud();
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [
-    groups,
-    students,
-    evaluationColumns,
-    grades,
-    attendanceRecords,
-    themePlanners,
-    weeklyPlanners,
-    scheduleSlots,
-    schedulePeriods,
-    calendarConfig,
-    teacherInfo,
-    user,
-    syncToCloud,
-  ]);
-
-  // Auth Handlers - Enforce Google Authentication with full Safari / iPad compatibility
-  const login = async (mode: 'popup' | 'redirect' | 'safari_ipad' = 'popup') => {
+  // Auth Handlers - Local Teacher Session (No Firebase dependency)
+  const login = async (_mode: 'popup' | 'redirect' | 'safari_ipad' = 'safari_ipad') => {
     setIsLoadingUser(true);
     try {
-      if (mode === 'redirect') {
-        await loginWithGoogleRedirect();
-        return;
-      }
-
-      if (mode === 'safari_ipad') {
-        // Direct authenticated teacher session for iPad / Safari where Apple blocks popups
-        const u = {
-          uid: 'anibal-castillo-meduca-chiriqui',
-          email: 'profanibalcastillo@gmail.com',
-          displayName: 'Prof. Aníbal Castillo',
-          photoURL: INITIAL_TEACHER_PROFILE.avatarUrl,
-        };
-        setUser(u);
-        localStorage.setItem('meduca_logged_user_v1', JSON.stringify(u));
-
-        // Fetch cloud data for Aníbal if authenticated
-        if (auth.currentUser && auth.currentUser.uid === u.uid) {
-          try {
-            const docRef = doc(db, 'teacher_records', u.uid);
-            const snap = await getDoc(docRef);
-            if (snap.exists()) {
-              const data = snap.data();
-              if (data.groups && Array.isArray(data.groups)) setGroups(data.groups);
-              if (data.students && Array.isArray(data.students)) setStudents(data.students);
-              if (data.evaluationColumns && Array.isArray(data.evaluationColumns)) setEvaluationColumns(data.evaluationColumns);
-              if (data.grades && typeof data.grades === 'object') setGrades(data.grades);
-              if (data.attendanceRecords && typeof data.attendanceRecords === 'object') setAttendanceRecords(data.attendanceRecords);
-              if (data.themePlanners && Array.isArray(data.themePlanners)) setThemePlanners(data.themePlanners);
-              if (data.weeklyPlanners && Array.isArray(data.weeklyPlanners)) setWeeklyPlanners(data.weeklyPlanners);
-              if (data.scheduleSlots && Array.isArray(data.scheduleSlots)) setScheduleSlots(data.scheduleSlots);
-              if (data.schedulePeriods && Array.isArray(data.schedulePeriods)) setSchedulePeriods(data.schedulePeriods);
-              if (data.calendarConfig && typeof data.calendarConfig === 'object') setCalendarConfig(data.calendarConfig);
-              if (data.teacherInfo && typeof data.teacherInfo === 'object') setTeacherInfo(data.teacherInfo);
-            }
-          } catch (e) {
-            console.warn('iPad Firestore sync note:', e);
-          }
-        }
-        return;
-      }
-
-      // Standard popup auth
-      const res = await loginWithGoogle();
-      if (res && res.user) {
-        const fireUser = res.user;
-        const u = {
-          uid: fireUser.uid,
-          email: fireUser.email || 'profanibalcastillo@gmail.com',
-          displayName: fireUser.displayName || 'Prof. Aníbal Castillo',
-          photoURL: fireUser.photoURL || INITIAL_TEACHER_PROFILE.avatarUrl,
-        };
-        setUser(u);
-        localStorage.setItem('meduca_logged_user_v1', JSON.stringify(u));
-      }
-    } catch (err) {
-      console.error('Google login error:', err);
-      throw err;
+      const u = {
+        uid: 'anibal-castillo-meduca-chiriqui',
+        email: 'profanibalcastillo@gmail.com',
+        displayName: teacherInfo?.name || 'Prof. Aníbal Castillo',
+        photoURL: teacherInfo?.avatarUrl || INITIAL_TEACHER_PROFILE.avatarUrl,
+      };
+      setUser(u);
+      localStorage.setItem('meduca_logged_user_v1', JSON.stringify(u));
     } finally {
       setIsLoadingUser(false);
     }
   };
 
   const logout = async () => {
-    try {
-      localStorage.removeItem('meduca_logged_user_v1');
-      setUser(null);
-      await logoutUser();
-    } catch (e) {
-      console.warn('Logout note:', e);
-      setUser(null);
-    }
+    localStorage.removeItem('meduca_logged_user_v1');
+    setUser(null);
   };
 
   // Actions
@@ -1122,7 +908,7 @@ export function useFirebaseSync() {
     addStudent,
     updateStudent,
     deleteStudent,
-    manualSync: syncToCloud,
+    manualSync: syncLocal,
     // Backup, Export, Import & Local Storage
     exportBackupData,
     downloadBackupJSON,
