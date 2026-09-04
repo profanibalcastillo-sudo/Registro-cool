@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   Edit2,
   Calendar,
-  Sparkles,
   BarChart2,
   ArrowUpDown,
   Filter,
@@ -41,8 +40,6 @@ interface GradebookViewProps {
   onAddColumn: (column: EvaluationColumn) => void;
   onDeleteColumn: (columnId: string) => void;
   onUpdateColumn: (column: EvaluationColumn) => void;
-  onOpenAiRubric?: () => void;
-  onOpenAiObservations?: () => void;
   teacherInfo: {
     name: string;
     email: string;
@@ -64,8 +61,6 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
   onAddColumn,
   onDeleteColumn,
   onUpdateColumn,
-  onOpenAiRubric,
-  onOpenAiObservations,
   teacherInfo,
   attendanceRecords = {},
 }) => {
@@ -275,31 +270,6 @@ export const GradebookView: React.FC<GradebookViewProps> = ({
               Consolidado Anual
             </button>
           </div>
-
-          {/* AI Tools for Gradebook */}
-          {onOpenAiRubric && (
-            <button
-              type="button"
-              onClick={onOpenAiRubric}
-              title="Generar rúbricas e instrumentos de evaluación con IA"
-              className="px-3 py-2 rounded-xl bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
-            >
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Rúbrica IA</span>
-            </button>
-          )}
-
-          {onOpenAiObservations && (
-            <button
-              type="button"
-              onClick={onOpenAiObservations}
-              title="Generar observaciones pedagógicas para boletines con IA"
-              className="px-3 py-2 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
-            >
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <span>Observaciones IA</span>
-            </button>
-          )}
 
           {/* Add Activity Button */}
           {viewMode === 'trimester' && (

@@ -12,8 +12,6 @@ import { CalendarSettingsModal } from './components/CalendarSettingsModal';
 import { StudentsModal } from './components/StudentsModal';
 import { GroupsModal } from './components/GroupsModal';
 import { TeacherSignatureModal } from './components/TeacherSignatureModal';
-import { AiAssistantModal } from './components/AiAssistantModal';
-import { DeployGuideModal } from './components/DeployGuideModal';
 import { BackupRestoreModal } from './components/BackupRestoreModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { getCurrentPeriodInfo } from './data/initialData';
@@ -82,8 +80,6 @@ export function App() {
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
   const [isGroupsModalOpen, setIsGroupsModalOpen] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
-  const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
   // Audio Bell State & Countdown
@@ -167,8 +163,6 @@ export function App() {
         onOpenStudentsModal={() => setIsStudentsModalOpen(true)}
         onOpenGroupsModal={() => setIsGroupsModalOpen(true)}
         onOpenSignatureModal={() => setIsSignatureModalOpen(true)}
-        onOpenAiModal={() => setIsAiModalOpen(true)}
-        onOpenDeployGuide={() => setIsDeployModalOpen(true)}
         onOpenBackupModal={() => setIsBackupModalOpen(true)}
         currentPeriodInfo={currentPeriodInfo}
         onTriggerBellSound={handleTriggerBellSound}
@@ -188,8 +182,6 @@ export function App() {
             onAddColumn={addEvaluationColumn}
             onDeleteColumn={deleteEvaluationColumn}
             onUpdateColumn={updateEvaluationColumn}
-            onOpenAiRubric={() => setIsAiModalOpen(true)}
-            onOpenAiObservations={() => setIsAiModalOpen(true)}
             teacherInfo={teacherInfo}
             attendanceRecords={attendanceRecords}
           />
@@ -225,7 +217,6 @@ export function App() {
             trimester={selectedTrimester}
             themePlanners={themePlanners}
             onSaveThemePlanner={saveThemePlanner}
-            onOpenAiPlanner={() => setIsAiModalOpen(true)}
             teacherInfo={teacherInfo}
           />
         )}
@@ -236,7 +227,6 @@ export function App() {
             trimester={selectedTrimester}
             weeklyPlanners={weeklyPlanners}
             onSaveWeeklyPlanner={saveWeeklyPlanner}
-            onOpenAiPlanner={() => setIsAiModalOpen(true)}
             teacherInfo={teacherInfo}
           />
         )}
@@ -317,49 +307,6 @@ export function App() {
         getStorageDiagnostics={getStorageDiagnostics}
         syncStatus={syncStatus}
         onManualCloudSync={manualSync}
-      />
-
-      {/* AI Assistant Modal */}
-      <AiAssistantModal
-        isOpen={isAiModalOpen}
-        onClose={() => setIsAiModalOpen(false)}
-        groups={groups}
-        group={selectedGroup}
-        selectedGroupId={selectedGroupId}
-        selectedTrimester={selectedTrimester}
-        trimester={selectedTrimester}
-        students={students}
-        grades={grades}
-        evaluationColumns={evaluationColumns}
-        onInsertThemePlanner={(planner) => {
-          if (planner) {
-            saveThemePlanner(planner as ThemePlanner);
-            setActiveTab('theme-planner');
-          }
-        }}
-        onAddEvaluationColumn={(col, maxScore) => {
-          const title = typeof col === 'string' ? col : col.title;
-          const category = typeof col === 'string' ? 'summative' : (col.category || 'summative');
-          const score = typeof col === 'string' ? (maxScore || 5.0) : (col.maxScore || 5.0);
-          addEvaluationColumn({
-            id: `col-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            groupId: selectedGroup.id,
-            trimester: selectedTrimester,
-            title,
-            category,
-            maxScore: score,
-            weight: 1,
-            date: new Date().toISOString().split('T')[0],
-            createdAt: new Date().toISOString(),
-          });
-          setActiveTab('gradebook');
-        }}
-      />
-
-      {/* Deploy to GitHub / Vercel Guide Modal */}
-      <DeployGuideModal
-        isOpen={isDeployModalOpen}
-        onClose={() => setIsDeployModalOpen(false)}
       />
 
       {/* Offline Status & Storage Indicator */}

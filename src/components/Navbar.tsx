@@ -8,14 +8,13 @@ import {
   Users,
   LogOut,
   Bell,
-  Sparkles,
+  Wrench,
   Cloud,
   CloudUpload,
   Layers,
   Settings,
   FileText,
   Volume2,
-  Github,
   HardDrive,
   WifiOff,
 } from 'lucide-react';
@@ -38,8 +37,6 @@ interface NavbarProps {
   onOpenStudentsModal: () => void;
   onOpenGroupsModal: () => void;
   onOpenSignatureModal: () => void;
-  onOpenAiModal: () => void;
-  onOpenDeployGuide: () => void;
   onOpenBackupModal: () => void;
   currentPeriodInfo: CurrentPeriodInfo;
   onTriggerBellSound?: () => void;
@@ -61,8 +58,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenStudentsModal,
   onOpenGroupsModal,
   onOpenSignatureModal,
-  onOpenAiModal,
-  onOpenDeployGuide,
   onOpenBackupModal,
   currentPeriodInfo,
   onTriggerBellSound,
@@ -127,28 +122,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right: Sound Bell, Cloud Sync, Profile & Actions */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* AI Assistant Direct Button */}
-          <button
-            type="button"
-            onClick={onOpenAiModal}
-            title="Abrir Asistente IA Docente MEDUCA (Planeamientos, Rúbricas, Observaciones)"
-            className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/50 hover:to-blue-600/50 text-purple-200 border border-purple-500/50 text-[11px] font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-sm animate-pulse"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-            <span className="hidden sm:inline">IA MEDUCA</span>
-          </button>
-
-          {/* Export / Deploy to GitHub & Vercel */}
-          <button
-            type="button"
-            onClick={onOpenDeployGuide}
-            title="Guía para Exportar a GitHub y Desplegar en Vercel"
-            className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <Github className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">GitHub / Vercel</span>
-          </button>
-
           {/* Backup / Export / Import Button */}
           <button
             type="button"
@@ -377,7 +350,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 : 'text-amber-400/90 hover:bg-slate-800 hover:text-amber-300 border border-transparent'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <Wrench className="w-3.5 h-3.5" />
             <span>Herramientas de Aula</span>
           </button>
 

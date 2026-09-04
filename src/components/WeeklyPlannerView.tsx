@@ -4,7 +4,6 @@ import {
   Plus,
   Trash2,
   Printer,
-  Sparkles,
   CheckCircle2,
   Calendar,
   Layers,
@@ -18,7 +17,6 @@ interface WeeklyPlannerViewProps {
   trimester: number;
   weeklyPlanners: WeeklyPlanner[];
   onSaveWeeklyPlanner: (planner: WeeklyPlanner) => void;
-  onOpenAiPlanner?: () => void;
   teacherInfo: {
     name: string;
     email: string;
@@ -32,7 +30,6 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
   trimester,
   weeklyPlanners = [],
   onSaveWeeklyPlanner,
-  onOpenAiPlanner,
   teacherInfo,
 }) => {
   const [selectedWeekNumber, setSelectedWeekNumber] = useState<number>(1);
@@ -100,18 +97,6 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
               </button>
             ))}
           </div>
-
-          {onOpenAiPlanner && (
-            <button
-              type="button"
-              onClick={onOpenAiPlanner}
-              title="Generar plan didáctico con IA Gemini"
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-600/30"
-            >
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Generar con IA</span>
-            </button>
-          )}
 
           <button
             type="button"
